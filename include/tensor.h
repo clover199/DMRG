@@ -5,6 +5,7 @@
 #include "tensor_quantum.h"
 
 // the tensor class that includes all types of qtensor
+
 class tensor
 {
 private:
@@ -26,5 +27,8 @@ public:
   void back(qtensor< stensor<double> >& out);
   void back(qtensor< dtensor< complex<double> > >& out);
   void back(qtensor< stensor< complex<double> > >& out);
+
+  void svd(tensor& U, vector<double>& S, tensor& V);
+
 };
 #endif

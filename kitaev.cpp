@@ -2,7 +2,6 @@
 #include "global.h"
 #include "functions.h"
 #include "operators.h"
-#include "dmrg.h"
 #include "tensor.h"
 
 extern string filename = "";
@@ -30,13 +29,13 @@ int main(int argc, char *argv[])
   vector<double> para( para_name.size(), 1.0 );
   para = set_para_val(argc, argv, sites, cutoff, sweep, para_name);
   
-  mps my_mps(sites);
   tensor ham;
   ham = H_spinless(para[0], para[1], para[2]);
   mpo my_mpo(sites, ham);
+  mps my_mps(sites);
 
   dmrg(my_mps, my_mpo, cutoff, sweep);
- 
+  
   time(&end);
   cout << "Time used: " << difftime(end,start) << endl;
 }

@@ -1,21 +1,12 @@
 
 #include "global.h"
-#include "basic.h"
 #include "mps.h"
 #include "mpo.h"
-#include "tensor_quantum.h"
-#include "tensor.h"
 
 namespace{
   vector<tensor> store_mps; // used to store_mps the multiplied MPS
   ofstream data_energy;
   ofstream data_singular;
-}
-
-template <typename T>
-void svd(T *vec, qtensor< dtensor<T> >& U, vector<T> S, qtensor< dtensor<T> >& V)
-{
-
 }
 
 
@@ -29,9 +20,13 @@ void av2 (int n, T *in, T *out)
 void update_two(int l, int r, int cutoff, mps& my_mps, mpo& my_mpo)
 {
   
-  znaupd(dim, NEV, val, vec, av2);
-  
-  svd(vec, mps[l], mps.middle(), mps[r])
+//  znaupd(dim, NEV, val, vec, av2);
+
+  tensor vec;
+  tensor U, V;
+  vector<double> S;
+  vec.svd(U, S, V);
+
 }
 
 
@@ -51,9 +46,7 @@ void dmrg(mps my_mps, mpo my_mpo, int cutoff, int sweep)
   data_energy.open(name.c_str());
   name = "singular"+filename;
   data_singular.open(name.c_str());
-  
-  vector<double> energy; energy.clear();
-  
+
   int pre_cutoff = 10;
   int pre_sweep = cutoff/50;
   

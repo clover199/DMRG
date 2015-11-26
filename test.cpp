@@ -1,6 +1,6 @@
 
 #include "global.h"
-#include "tensor_quantum.h"
+#include "tensor.h"
 
 int main()
 {

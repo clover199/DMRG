@@ -43,3 +43,9 @@ void tensor::back(qtensor< stensor< complex<double> > >& out)
   else cerr << "Error in tensor::back: no sparse-complex tensor available\n";
 }
 
+
+void tensor::svd(tensor& U, vector<double>& S, tensor& V)
+{
+
+}
+

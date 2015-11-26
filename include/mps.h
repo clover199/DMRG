@@ -2,18 +2,15 @@
 #define _MATRIX_PRODUCT_STATE_
 
 #include "global.h"
-#include "tensor_quantum.h"
+#include "tensor.h"
 #include "mpo.h"
 
 class mps
 {
-	
 private:
-
   int cut_;
-  vector< qtensor< dtensor<double> > > dstate_;
-  vector< qtensor< dtensor< complex<double> > > > zstate_;
-  vector<double> S_;
+  vector<tensor> state_;
+  vector<double> singular_;
   
 public:
 
@@ -26,7 +23,9 @@ public:
   
   void create_store(vector<tensor>& store);
   
-  qtensor< dtensor<double> > operator[](int n);
+  tensor operator[](int n) { return state_[n]; }
+  
+  vector<double> middle() { return singular_; }
   
   void move(int n);
 

@@ -72,12 +72,12 @@ tensor H_spinless(double t, double p, double u)
   rd.update(1, 0,0,0,0);
   rd.update(u, 5,0,0,0);
   rd.update(1, 5,0,0,5);
-  dtensor<double> ld(3,1,1,3); // c^d non-zero
+  dtensor<double> ld(6,1,1,6); // c^d non-zero
   ld.update( 1, 3,0,0,0);
   ld.update( 1, 4,0,0,0);
   ld.update( t, 5,0,0,1);
   ld.update(-p, 5,0,0,3);
-  dtensor<double> ru(3,1,1,3); // c non-zero
+  dtensor<double> ru(6,1,1,6); // c non-zero
   ru.update( 1, 1,0,0,0);
   ru.update( 1, 2,0,0,0);
   ru.update( p, 5,0,0,2);

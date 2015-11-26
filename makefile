@@ -39,9 +39,10 @@ test:
 		$(MY_SRC)/tensor_dense.o \
 		$(MY_SRC)/tensor_sparse.o \
 		$(MY_SRC)/tensor_quantum.o \
+		$(MY_SRC)/tensor.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:
-	rm -rf *.o
+	rm -rf *.o *.txt
 	$(MAKE) -C ./src clean
 	

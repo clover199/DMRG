@@ -1,5 +1,5 @@
-#ifndef _GLOBAL_
-#define _GLOBAL_
+#ifndef _MY_GLOBAL_
+#define _MY_GLOBAL_
 
 #include <iostream>
 #include <fstream>
@@ -11,9 +11,12 @@
 #include <cstdlib>
 #include <ctime>
 
-#define ZERO 1e-10
+//#define FERMION
+#define SYMMETRY 3
+
 #define TOL 1e-10
 #define NEV 6
+#define ZERO 0.01
 
 using std::cout;
 using std::endl;
@@ -22,6 +25,7 @@ using std::ofstream;
 using std::vector;
 using std::complex;
 using std::string;
+using std::abs;
 
 extern string filename;
 extern bool print;

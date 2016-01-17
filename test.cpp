@@ -1,42 +1,37 @@
 
 #include "global.h"
-#include "tensor.h"
+#include "functions.h"
+#include "operators.h"
+#include "useful.h"
+
+extern string filename = "";
+extern bool print = false;
+extern int symmetry_sector = 0;
 
 int main()
 {
-  srand(time(0));
+  std::srand(std::time(0));
+  cout << "\ntensor A:\n";
+  qtensor<double> A(3,3,1,1);
+  tensor<double> A0(3,2,4,1);
+  A0.rand();
+  A.update(A0, 0,1,0,0);
+  A0 = tensor<double> (2,1,4,1);
+  A0.rand();
+  A.update(A0, 1,0,0,0);
+  A0 = tensor<double> (3,2,4,1);
+  A0.rand();
+  A.update(A0, 2,2,0,0);
+  A0 = tensor<double> (2,2,4,1);
+  A0.rand();
+//  A.update(A0, 1,1,0,0);
+  A.print();
+  cout << endl;
 
-  int a1=3, a2=4, a3=5;
-  stensor< complex<double> > A(a1,a2,a3);
-  for(int i=0;i<10;i++) A.update(5.0*rand()/RAND_MAX-10, rand()%a1, rand()%a2, rand()%a3);
-  A.sort();
-//  cout << "A" << endl; A.print();
-
-  int b1=5, b2=5;
-  stensor< complex<double> > B(b1,b2);
-  for(int i=0;i<20;i++) B.update(5.0*rand()/RAND_MAX-10, rand()%b1, rand()%b2);
-  B.sort();
-//  cout << "B" << endl; B.print();  
-
-  int c1=5;
-  stensor< complex<double> > C(c1);
-  for(int i=0;i<10;i++) C.update(5.0*rand()/RAND_MAX-10, rand()%c1);
-  C.sort();
-//  cout << "C" << endl; C.print();
-
-  int d=4;
-  stensor< complex<double> > D(d);
-  for(int i=0;i<d;i++) D.update(1, i);
-  D.diag(3);
-//  cout << "D" << endl; D.print();
-
-/*
-  tensor< double > S;
-  A.svd(B,S,C,2);
-  S.print();
-  B= B.transpose(2);
-  C = C.transpose();
-  D.contract(B,A,2);
-  B.contract(D,C);
-  B.print();*/
+  qtensor<double> U,S,V,B;
+  A.svd(U,S,V,2,10);
+  cout<<"S:\n";S.print_all();cout<<endl;
+  B = U * S * V;
+  S.plus(A,B,-1);
+  S.print_all(1);
 }

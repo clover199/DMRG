@@ -2,32 +2,43 @@
 #define _MATRIX_PRODUCT_STATE_
 
 #include "global.h"
-#include "tensor.h"
+#include "qtensor.h"
 #include "mpo.h"
 
+template <typename T>
 class mps
 {
 private:
+
   int cut_;
-  vector<tensor> state_;
-  vector<double> singular_;
+
+  vector< qtensor<T> > state_;
+
+  vector< qtensor<T> > store_;
+
+  qtensor<double> singular_;
   
 public:
 
-  // set the number of sites
-  mps(int sites);
-
-  // initialize the structure of the MPS according to MPO
-  // return the size of the system
-  int initialize(mpo& in);
+  mps(const mpo<T>& in) {
+    cut_ = 0;
+    state_.resize(in.size()); 
+    store_.resize(in.size()); 
+  }
   
-  void create_store(vector<tensor>& store);
+  int size() const { return state_.size(); }
   
-  tensor operator[](int n) { return state_[n]; }
+  qtensor<T>& operator[](int n) { return state_[n]; }
   
-  vector<double> middle() { return singular_; }
+  qtensor<T>& operator()(int n) { return store_[n]; }
   
-  void move(int n);
+  qtensor<double>& middle() { return singular_; }
+  
+  void update_state(int n, qtensor<T>& in) { state_[n] = in; }
+  
+  void update_store(int n, qtensor<T>& in) { state_[n] = in; }
+  
+  void update(qtensor<double>& in) { singular_ = in; }
 
 };
 

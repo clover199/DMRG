@@ -1,21 +1,48 @@
-#ifndef _OPERATORS_
-#define _OPERATORS_
+#ifndef _MY_OPERATORS_
+#define _MY_OPERATORS_
 
-#include "tensor.h"
+#include "qtensor.h"
 
+// *******
+// *  1  *
+// *  |  *
+// *  O  *
+// *  |  *
+// *  0  *
+// *******
 
-tensor fermion_c();
+qtensor<double> sigma_x();  // no symmetry
 
-tensor fermion_c_up();
+qtensor< complex<double> > sigma_y();  // no symmetry
 
-tensor fermion_c_down();
+qtensor<double> sigma_z();  // no symmetry
 
-// *************************************
-// index: alpha phy phy alpha
+qtensor<double> fermion_c();
 
+qtensor<double> fermion_c_up();
+
+qtensor<double> fermion_c_down();
+
+// ***********
+// *    3    *
+// *    |    *
+// *  0-O-2  *
+// *    |    *
+// *    1    *
+// ***********
+
+// ******************************************************************
+// Ising model: J Sz_{i} Sz_{i+1} + H Sz{i}
+
+qtensor<double> H_Ising(double j=1., double h=1.);
+
+// ******************************************************************
 // spinless fermion Hamiltonian:
+//   U=0: p-wave superconductor
+//   P=0: Hubbard model
 // T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. + U c^d_{i] c_{i}
 // Where T is the hopping parameter and P is the pairing parameter
-tensor H_spinless(double t, double p, double u);
+
+qtensor<double> H_spinless_fermion(double t=1., double p=1., double u=1.);
 
 #endif

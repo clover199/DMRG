@@ -29,20 +29,23 @@ extern "C" void zgemm_(char *TRANSA, char *TRANSB, int *M, int *N, int *K,
                        complex<double> *B, int *LDB, complex<double> *beta, 
                        complex<double> *C, int *LDC);
 				
-void tgemm(char transa, char transb, int m, int n, int K,
+void zgemm(char transa, char transb, int m, int n, int K,
            complex<double> *a, complex<double> *b, complex<double> *C,
            complex<double> alpha, complex<double> beta)
 {
-  char TRANSA = transb;
-  char TRANSB = transa;
-  int M = n;
-  int N = m;
-  int LDA = K;
-  int LDB = N;
-  complex<double> *A = b;
-  if(TRANSA == 'N' or TRANSA == 'n') LDA = M;
-  complex<double> *B = a;
-  if(TRANSB == 'N' or TRANSB == 'n') LDB = K;
-  int LDC = M;
-  zgemm_(&TRANSA, &TRANSB, &M, &N, &K, &alpha, A, &LDA, B, &LDB, &beta, C, &LDC);
+  if(m>0 and n>0 and K>0)
+  {
+    char TRANSA = transb;
+    char TRANSB = transa;
+    int M = n;
+    int N = m;
+    int LDA = K;
+    int LDB = N;
+    complex<double> *A = b;
+    if(TRANSA == 'N' or TRANSA == 'n') LDA = M;
+    complex<double> *B = a;
+    if(TRANSB == 'N' or TRANSB == 'n') LDB = K;
+    int LDC = M;
+    zgemm_(&TRANSA, &TRANSB, &M, &N, &K, &alpha, A, &LDA, B, &LDB, &beta, C, &LDC);
+  }
 }

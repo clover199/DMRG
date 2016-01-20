@@ -16,7 +16,7 @@
 
 #define TOL 1e-10
 #define NEV 6
-#define ZERO 0.01
+#define ZERO 0.01  // for print only
 
 using std::cout;
 using std::endl;
@@ -29,6 +29,6 @@ using std::abs;
 
 extern string filename;
 extern bool print;
-
+extern int symmetry_sector;
 
 #endif

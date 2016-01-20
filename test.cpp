@@ -33,5 +33,5 @@ int main()
   cout<<"S:\n";S.print_all();cout<<endl;
   B = U * S * V;
   S.plus(A,B,-1);
-  S.print_all(1);
+  S.print_all();
 }

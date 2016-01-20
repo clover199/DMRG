@@ -16,9 +16,6 @@ vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, i
                             int& sector, vector<string>& para_name);
 
 
-void update_two(int l, int r, int cutoff, mps<double>& my_mps, mpo<double>& my_mpo);
-
-
 void dmrg(mps<double> my_mps, mpo<double> my_mpo, int cutoff, int sweep);
 
 #endif

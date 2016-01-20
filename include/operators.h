@@ -36,6 +36,10 @@ qtensor<double> fermion_c_down();
 
 qtensor<double> H_Ising(double j=1., double h=1.);
 
+qtensor<double> H_Ising_ledge(double j=1., double h=1.);
+
+qtensor<double> H_Ising_redge(double j=1., double h=1.);
+
 // ******************************************************************
 // spinless fermion Hamiltonian:
 //   U=0: p-wave superconductor

@@ -90,20 +90,20 @@ qtensor<double> fermion_c_down()
   return ret;
 }
 
-// ***********
-// *    3    *
-// *    |    *
-// *  0-O-2  *
-// *    |    *
-// *    1    *
-// ***********
+// ***********************
+// *  2       3       2  *
+// *  |       |       |  *
+// *  O-1   0-O-2   1-O  *
+// *  |       |       |  *
+// *  0       1       0  *
+// ***********************
 
 // ******************************************************************
-// Ising model: J Sz_{i} Sz_{i+1} + H Sz{i}
+// Ising model: J Sz_{i} Sz_{i+1} + H Sx{i}
 //
-//  MPO: I     0     0      Sz: 1  0
-//       Sz    0     0          0 -1
-//      H*Sz  J*Sz   I
+//  MPO: I     0     0      Sz: 1  0     Sx: 0 1
+//       Sz    0     0          0 -1         1 0
+//      H*Sx  J*Sz   I
 
 qtensor<double> H_Ising(double j, double h)
 {
@@ -112,15 +112,49 @@ qtensor<double> H_Ising(double j, double h)
   x.update( 1, 0,1,0,1);
   x.update( 1, 1,0,0,0);
   x.update(-1, 1,1,0,1);
-  x.update( h, 2,0,0,0);
-  x.update(-h, 2,1,0,1);
+  x.update( h, 2,0,0,1);
+  x.update( h, 2,1,0,0);
   x.update( j, 2,0,1,0);
   x.update(-j, 2,1,1,1);
   x.update( 1, 2,0,2,0);
-  x.update(-1, 2,1,2,1);
+  x.update( 1, 2,1,2,1);
 
   qtensor<double> ret(1,1,1,1);
   ret.update(x, 0,0,0,0);
+  return ret;
+}
+
+//  MPO: H*Sx  J*Sz   I
+qtensor<double> H_Ising_ledge(double j, double h)
+{
+  tensor<double> x(2,3,2);
+  x.update( h, 0,0,1);
+  x.update( h, 1,0,0);
+  x.update( j, 0,1,0);
+  x.update(-j, 1,1,1);
+  x.update( 1, 0,2,0);
+  x.update( 1, 1,2,1);
+
+  qtensor<double> ret(1,1,1);
+  ret.update(x, 0,0,0);
+  return ret;
+}
+
+//  MPO: I
+//       Sz
+//      H*Sx
+qtensor<double> H_Ising_redge(double j, double h)
+{
+  tensor<double> x(2,3,2);
+  x.update( 1, 0,0,0);
+  x.update( 1, 1,0,1);
+  x.update( 1, 0,1,0);
+  x.update(-1, 1,1,1);
+  x.update( h, 0,2,1);
+  x.update( h, 1,2,0);
+
+  qtensor<double> ret(1,1,1);
+  ret.update(x, 0,0,0);
   return ret;
 }
 

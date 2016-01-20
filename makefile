@@ -5,7 +5,7 @@ MY_SRC = "./src"
 
 all: 
 	$(MAKE) -C $(MY_SRC) all
-	g++ -g test.cpp -I ./include \
+	g++ -g kitaev.cpp -I ./include \
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \
@@ -33,10 +33,12 @@ test:
 		$(MY_SRC)/zgesvd.o \
 		$(MY_SRC)/zheev.o \
 		$(MY_SRC)/znaupd.o \
-		$(MY_SRC)/tensor_dense.o \
-		$(MY_SRC)/tensor_sparse.o \
-		$(MY_SRC)/tensor_quantum.o \
 		$(MY_SRC)/tensor.o \
+		$(MY_SRC)/qtensor.o \
+		$(MY_SRC)/functions.o \
+		$(MY_SRC)/useful.o \
+		$(MY_SRC)/operators.o \
+		$(MY_SRC)/dcore.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:

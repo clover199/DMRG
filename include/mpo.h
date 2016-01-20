@@ -25,9 +25,14 @@ public:
     sites_ = sites;
     operators_.resize(1);
     operators_[0] = ham;
+    l_edge_ = ham;
+    r_edge_ = ham;
  }
   
-  void update(const qtensor<T>& ham) { operators_.push_back(ham); }
+  void update(const qtensor<T>& ham) {
+    operators_.push_back(ham);
+    r_edge_ = operators_[(sites_-1+operators_.size())%operators_.size()] ;
+  }
 
   int size() const {return sites_;}  
 
@@ -43,7 +48,5 @@ public:
   }
   
 };
-
-
 
 #endif

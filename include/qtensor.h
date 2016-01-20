@@ -24,15 +24,6 @@ private:
   
   // get/check "dim_" from "sym_" and "val_"
   void check_dim_(int n);
-  
-  // define the rule for adding symmetries
-#ifdef SYMMETRY
-  int add(int a, int b) const {return (a+b)%SYMMETRY;}
-#elif defined FERMION
-  int add(int a, int b) const {return (a+b)%2;}
-#else
-  int add(int a, int b) const {return a+b;}
-#endif
 
 public:
   // claim space with all elements as zero
@@ -50,6 +41,8 @@ public:
   
   int index() const {return index_.size();}
   
+  int dimension(int n, int m) const {return dim_[n][m];}
+
   int dimension(int n) const {
     int ret = 0;
     for(int i=0;i<dim_[n].size();i++) ret += dim_[n][i];
@@ -150,5 +143,8 @@ public:
   // returns the number of singular values (length of S)
   vector<double> svd(qtensor& U, qtensor<double>& S, qtensor& V,
                      int num=1, int cutoff=0);
+
+  // 
+  int eig(double* val, T* vec, int sector=-1);
 };
 #endif

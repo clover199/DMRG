@@ -26,20 +26,30 @@ public:
     store_.resize(in.size()); 
   }
   
+  void print() const {
+    cout << "Print all MPS state" << endl;
+    for(int i=0;i<state_.size();i++)
+    {
+      cout << i << ": ";
+      state_[i].print();
+      cout << endl;
+    }
+    cout << "Print all stored tensor" << endl;
+    for(int i=0;i<store_.size();i++)
+    {
+      cout << i << ": ";
+      store_[i].print();
+      cout << endl;
+    }
+  }
+
   int size() const { return state_.size(); }
   
   qtensor<T>& operator[](int n) { return state_[n]; }
   
   qtensor<T>& operator()(int n) { return store_[n]; }
   
-  qtensor<double>& middle() { return singular_; }
-  
-  void update_state(int n, qtensor<T>& in) { state_[n] = in; }
-  
-  void update_store(int n, qtensor<T>& in) { state_[n] = in; }
-  
-  void update(qtensor<double>& in) { singular_ = in; }
-
+  qtensor<double>& center() { return singular_; }
 };
 
 #endif

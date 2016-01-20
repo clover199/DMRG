@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   // ********** initialize the system **********
 
   vector<string> para_name; // name of the parameters
-  para_name = set_para_name("h","j");
+  para_name = set_para_name("j","h");
 
   int sites = 4;
   int cutoff = 10;
@@ -29,9 +29,9 @@ int main(int argc, char *argv[])
     The order doesn't matter. If the value is not set, we use default values. */
   vector<double> para( para_name.size(), 1.0 );
   para = set_para_val(argc, argv, sites, cutoff, sweep, symmetry_sector, para_name);
-  
-  qtensor<double> ham; ham = H_Ising(para[0], para[1]);
-  mpo<double> my_mpo(sites, ham);
+
+  mpo<double> my_mpo(sites, H_Ising(para[0], para[1]));
+  my_mpo.edge(H_Ising_ledge(para[0], para[1]), H_Ising_redge(para[0], para[1]));
   mps<double> my_mps(my_mpo);
 
   dmrg(my_mps, my_mpo, cutoff, sweep);

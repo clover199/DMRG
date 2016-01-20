@@ -123,6 +123,9 @@ public:
   // A = U * S * V
   // returns the number of singular values (length of S)
   int svd(tensor& U, tensor<double>& S, tensor& V, int num=1);
+
+  int eig(double* val, T* vec);
+
 };
 
 #endif

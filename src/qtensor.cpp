@@ -185,8 +185,8 @@ qtensor<T> qtensor<T>::exchange(int a, int b) const
   ret.dim_[b] = dim_[a];
   for(int i=0;i<val_.size();i++)
   {
-    ret.sym_[a] = sym_[b];
-    ret.sym_[b] = sym_[a];
+    ret.sym_[i][a] = sym_[i][b];
+    ret.sym_[i][b] = sym_[i][a];
     ret.val_[i] = val_[i].exchange(a,b);
   }
   return ret;
@@ -654,7 +654,7 @@ template <typename T>
 void qtensor<T>::contract(T* out, T* in,
                           const vector< vector<int> >& map,
                           char transa, char transb, int num)
-{  
+{
   for(int i=0;i<map.size();i++)
     val_[map[i][0]].contract(out+map[i][2], in+map[i][1],
                      map[i][3], map[i][4], transa, transb, num, map[i][5]);
@@ -673,7 +673,7 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
   if( 'N'==transa or 'n'==transa ) indexa = index_.size()-num;
   int indexb = dim.size()-num;
   if( 'N'==transb or 'n'==transb ) indexb = 0;
- 
+
   bool check = false;  // check symmetry
   for(int i=0;i<num;i++) if(index_[indexa+i]!=dim[indexb+i].size()) check = true;
   if(check)
@@ -715,13 +715,14 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
   for(int i=0;i<dim.size();i++) if(i<indexb or i>=indexb+num)
     dim_ret[add++] = dim[i];
 
-  vector< vector<int> > sym_dim;  // dim, dim of mid, begin point of sym
+  vector< vector<int> > sym_dim;  // dim, dim of row, begin point of sym
   sym_dim.resize(sym.size());
   for(int i=0;i<sym.size();i++)
   {
     sym_dim[i] = vector<int> (3,1);
     for(int s=0;s<dim.size();s++) sym_dim[i][0] *= dim[s][sym[i][s]];
-    for(int s=indexb;s<indexb+num;s++) sym_dim[i][1] *= dim[s][sym[i][s]];
+    if(indexb) for(int s=0;s<indexb;s++) sym_dim[i][1] *= dim[s][sym[i][s]];
+    else for(int s=0;s<num;s++) sym_dim[i][1] *= dim[s][sym[i][s]];
   }
   sym_dim[0][2] = 0;
   for(int i=1;i<sym.size();i++) sym_dim[i][2] = sym_dim[i-1][2] + sym_dim[i-1][0];
@@ -921,6 +922,56 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   V = V.split(1, dim);
   return s;
 }
+
+
+template <typename T>
+int qtensor<T>::eig(double* val, T* vec, int sector)
+{
+  if(index_.size()!=2)
+  {
+    cerr << "Error in tensor_quantum eig: cannot diagonalize. "
+            "This is a " << index_.size() << "-tensor.";
+    return 0;
+  }
+  if(index_[0]!=index_[1])
+  {
+    cerr << "Error in tensor_quantum eig: the symmetries are not the same.\n"
+         << index_[0] << "!=" << index_[1] << endl;
+    return 0;
+  }
+  for(int i=0;i<index_[0];i++) if(dim_[0][i]!=dim_[1][i])
+  {
+    cerr << "Error in tensor_quantum eig: the symmetry sector " << i
+         << " is not square.\n"
+         << dim_[i][0] << "!=" << dim_[i][1] << endl;
+    return 0;
+  }
+  bool check = false;
+  for(int i=0;i<val_.size();i++) if(sym_[i][0]!=sym_[i][1])
+  {
+    cerr << "Warning in tensor_quantum eig: not block diagonalized."
+            "Combining the symmetry sectors\n";
+    check = true;
+    return 0;
+  }
+  if(sym_.size()==1) return val_[0].eig(val, vec);
+  if(check or sector==-1)
+  {
+    qtensor<T> temp;
+    temp = remove_symmetry();
+    return temp.eig(val, vec, -1);
+  }
+  int loc = -1;
+  for(int i=0;i<sym_.size();i++) if(sym_[i][0]==sector) loc = i;
+  if(loc==-1)
+  {
+    cerr << "Error in tensor_quantum eig: cannot find symmetry sector "
+         << sector << endl;
+    return 0;
+  }
+  return val_[loc].eig(val, vec);
+}
+
 
 template class qtensor<double>;
 template class qtensor< complex<double> >;

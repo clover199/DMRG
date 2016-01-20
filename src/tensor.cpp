@@ -463,7 +463,7 @@ void tensor<T>::contract(T* out, T* in, int row, int col,
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = index_.size()-num;
-  
+ 
   int m = val_.size();
   for(int i=0;i<num;i++) m /= index_[indexa+i];
   int n = row;
@@ -509,6 +509,27 @@ int tensor<T>::svd(tensor& U, tensor<double>& S, tensor& V, int num)
   
   zgesvd(begin(), left, right, S.begin(), U.begin(), V.begin());
   return ret;
+}
+
+
+template <typename T>
+int tensor<T>::eig(double* val, T* vec)
+{
+  if(index_.size()!=2)
+  {
+    cerr << "Error in tensor eig: "
+            "This " << index_.size() << "-tensor is not a matrix.\n";
+    return 0;
+  }
+  if( index_[0]!=index_[1] )
+  {
+    cerr << "Error in tensor eig: This is not a square matrix. "
+         << index_[0] << "!=" << index_[1] << endl;
+    return 0;
+  }
+  int d = index_[0];
+  zheev(begin(), d, val, vec);
+  return d;
 }
 
 

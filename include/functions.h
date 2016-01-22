@@ -16,6 +16,9 @@ vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, i
                             int& sector, vector<string>& para_name);
 
 
-void dmrg(mps<double> my_mps, mpo<double> my_mpo, int cutoff, int sweep);
+void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep);
+
+void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+          int cutoff, int sweep);
 
 #endif

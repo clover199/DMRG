@@ -168,6 +168,31 @@ qtensor<T> qtensor<T>::conjugate() const
 
 
 template <typename T>
+qtensor<T> qtensor<T>::simplify() const
+{
+  qtensor<T> ret;
+  ret.index_ = index_;
+  ret.dim_ = dim_;
+  ret.sym_.clear();
+  ret.val_.clear();
+  vector<int> sym(sym_.size(),0);
+  for(int i=0;i<sym_.size();i++) for(int j=0;j<index_.size();j++)
+    sym[i] = sym[i]*index_[j]+sym_[i][j];
+  for(int i=0;i<sym_.size();i++)
+  {
+    bool check = false;
+    for(int j=0;j<val_[i].val_.size();j++) if(abs(val_[i].val_[j])>TOL) check = true;
+    if(check)
+    {
+      ret.sym_.push_back(sym_[i]);
+      ret.val_.push_back(val_[i]);
+    }
+  }
+  return ret;
+}
+
+
+template <typename T>
 qtensor<T> qtensor<T>::exchange(int a, int b) const
 {
   if( a>=index_.size() or b>=index_.size() or a<0 or b<0)
@@ -345,14 +370,15 @@ qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
   for(int i=index+dim.size();i<ret.index_.size();i++)
     ret.dim_[i] = dim_[i-dim.size()+1];
 
-  vector<int> index_new;
+  vector<int> index_new;  // used to get the index for the splitting part
   index_new.resize(dim.size());
   for(int i=0;i<index_new.size();i++) index_new[i] = dim[i].size();
   vector< vector<int> > map;
   generate_map(map, index_new);
   vector< vector<int> > sym_dim;
+  index_new.resize(index_[index]);
+  for(int i=0;i<index_new.size();i++) index_new[i] = 0;  //used to store the beg
   sym_dim.resize(map.size());
-  for(int i=0;i<index_new.size();i++) index_new[i] = 0; //used to store the beg
   for(int i=0;i<map.size();i++)
   {
     sym_dim[i].resize(3);
@@ -363,7 +389,6 @@ qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
     sym_dim[i][2] = index_new[sym_dim[i][0]];
     index_new[sym_dim[i][0]] += sym_dim[i][1];
   }
-
   index_new.resize(ret.index_.size());
   tensor<T> temp;
   for(int t=0;t<sym_.size();t++) for(int s=0;s<sym_dim.size();s++)
@@ -667,7 +692,7 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
                          vector< vector<int> >& sym_ret,
                          const vector< vector<int> >& dim,
                          const vector< vector<int> >& sym,
-                         char transa, char transb, int num, double beta) const
+                         char transa, char transb, int num, double beta, bool back) const
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = index_.size()-num;
@@ -700,20 +725,20 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
     return false;
   }
 
-  int add = 0;  // get index
-  vector<int> index;
+  int ad = 0;
+  vector<int> index;  // index for the new tensor
   index.resize(index_.size()+dim.size()-2*num, 0);
   for(int i=0;i<index_.size();i++) if(i<indexa or i>=indexa+num)
-    index[add++] = index_[i];
+    index[ad++] = index_[i];
   for(int i=0;i<dim.size();i++) if(i<indexb or i>=indexb+num)
-    index[add++] = dim[i].size();
+    index[ad++] = dim[i].size();
 
-  add = 0;  // get dim_ret
-  dim_ret.resize(index.size());
+  ad = 0;
+  dim_ret.resize(index.size());  // get dim_ret
   for(int i=0;i<index_.size();i++) if(i<indexa or i>=indexa+num)
-    dim_ret[add++] = dim_[i];
+    dim_ret[ad++] = dim_[i];
   for(int i=0;i<dim.size();i++) if(i<indexb or i>=indexb+num)
-    dim_ret[add++] = dim[i];
+    dim_ret[ad++] = dim[i];
 
   vector< vector<int> > sym_dim;  // dim, dim of row, begin point of sym
   sym_dim.resize(sym.size());
@@ -742,11 +767,22 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
     if(check)
     {
       sym_ret[count_sym].resize(index.size());
-      add = 0;
+      ad = 0;
       for(int k=0;k<index_.size();k++) if(k<indexa or k>=indexa+num)
-        sym_ret[count_sym][add++] = sym_[i][k];
+        sym_ret[count_sym][ad++] = sym_[i][k];
       for(int k=0;k<dim.size();k++) if(k<indexb or k>=indexb+num)
-        sym_ret[count_sym][add++] = sym[j][k];
+        sym_ret[count_sym][ad++] = sym[j][k];
+      if(back)
+      {
+        int sum=0;
+        for(int k=0;k<index.size();k++)
+          sum = add(sum, sym_ret[count_sym][k]);
+        if(sum!=symmetry_sector) check = false;
+      }
+    }
+    if(check)
+    {
+      map[count_sym] = 0;
       for(int s=0;s<index.size();s++)
         map[count_sym] = map[count_sym]*index[s]+sym_ret[count_sym][s];
       map_ret[count_map].resize(6);
@@ -900,7 +936,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     v_num[i] += 1;
     diff--;
   }
-  
+
   for(int i=0;i<sym;i++)
   {
     U.val_[i] = U.val_[i].resize(1, u_num[i]);

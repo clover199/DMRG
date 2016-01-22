@@ -20,6 +20,7 @@ all:
 		$(MY_SRC)/useful.o \
 		$(MY_SRC)/operators.o \
 		$(MY_SRC)/dcore.o \
+		$(MY_SRC)/zcore.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 test: 
@@ -39,6 +40,7 @@ test:
 		$(MY_SRC)/useful.o \
 		$(MY_SRC)/operators.o \
 		$(MY_SRC)/dcore.o \
+		$(MY_SRC)/zcore.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:

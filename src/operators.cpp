@@ -199,3 +199,197 @@ qtensor<double> H_spinless_fermion(double t, double p, double u)
   return ret;
 }
 
+//  MPO: U*n  T*c^d  P*c -P*c^d -T*c  I
+qtensor<double> H_spinless_fermion_ledge(double t, double p, double u)
+{
+  tensor<double> lu(1,6,1);
+  lu.update(1, 0,5,0);
+  tensor<double> rd(1,6,1);
+  rd.update(u, 0,0,0);
+  rd.update(1, 0,5,0);
+  tensor<double> ld(1,6,1); // c^d non-zero
+  ld.update( t, 0,1,0);
+  ld.update(-p, 0,3,0);
+  tensor<double> ru(1,6,1); // c non-zero
+  ru.update( p, 5,0,2,0);
+  ru.update(-t, 5,0,4,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(lu, 0,0,0);
+  ret.update(ru, 0,0,1);
+  ret.update(ld, 1,0,0);
+  ret.update(rd, 1,0,1);
+  return ret;
+}
+
+//   MPO: I
+//        c
+//        c
+//       c^d
+//       c^d
+//       U*n 
+qtensor<double> H_spinless_fermion_redge(double t, double p, double u)
+{
+  tensor<double> lu(1,6,1);
+  lu.update(1, 0,0,0);
+  tensor<double> rd(1,6,1);
+  rd.update(1, 0,0,0);
+  rd.update(u, 0,5,0);
+  tensor<double> ld(1,6,1); // c^d non-zero
+  ld.update( 1, 0,3,0);
+  ld.update( 1, 0,4,0);
+  tensor<double> ru(1,6,1); // c non-zero
+  ru.update( 1, 0,1,0);
+  ru.update( 1, 0,2,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(lu, 0,0,0);
+  ret.update(ru, 0,0,1);
+  ret.update(ld, 1,0,0);
+  ret.update(rd, 1,0,1);
+  return ret;
+}
+
+// ******************************************************************
+// Three state Potts model (same as the paper):
+// -fe^{ip} T_{j} - fe^{-ip} T^d_{j} - Je^{it} S_{j} S^d_{j+1} - Je^{-it} S^d_{j} S_{j+1}
+//
+//   MPO: I         0          0        0            T: 1  0  0     S: 0 1 0
+//        S         0          0        0               0  w  0        0 0 1
+//       S^d        0          0        0               0  0 w^2       1 0 0
+//        h  -Je{-it}*S^d  -Je{it}*c    I
+//
+//    h = -f e^{ip} T_{j} - f e^{-ip} T^d_{j}
+
+qtensor< complex<double> > H_Potts(double f, double j, double p, double t)
+{
+  tensor< complex<double> > l00(4,1,4,1);
+  complex<double> val = -2*f*cos(p);
+  l00.update(  1, 0,0,0,0);
+  l00.update(val, 3,0,0,0);
+  l00.update(  1, 3,0,3,0);
+  tensor< complex<double> > l11(4,1,4,1);
+  val = -2*f*cos(p+2*PI/3);
+  l11.update(  1, 0,0,0,0);
+  l11.update(val, 3,0,0,0);
+  l11.update(  1, 3,0,3,0);
+  tensor< complex<double> > l22(4,1,4,1);
+  val = -2*f*cos(p+4*PI/3);
+  l22.update(  1, 0,0,0,0);
+  l22.update(val, 3,0,0,0);
+  l22.update(  1, 3,0,3,0);
+  val = -j*complex<double>(cos(t), sin(t));
+  tensor< complex<double> > l01(4,1,4,1);  // S
+  l01.update(  1, 1,0,0,0);
+  l01.update(val, 3,0,2,0);
+  tensor< complex<double> > l12(4,1,4,1);
+  l12.update(  1, 1,0,0,0);
+  l12.update(val, 3,0,2,0);
+  tensor< complex<double> > l20(4,1,4,1);
+  l20.update(  1, 1,0,0,0);
+  l20.update(val, 3,0,2,0);
+  val = -j*complex<double>(cos(t), -sin(t));
+  tensor< complex<double> > l10(4,1,4,1);  // S^d
+  l10.update(  1, 2,0,0,0);
+  l10.update(val, 3,0,1,0);
+  tensor< complex<double> > l21(4,1,4,1);
+  l21.update(  1, 2,0,0,0);
+  l21.update(val, 3,0,1,0);
+  tensor< complex<double> > l02(4,1,4,1);
+  l02.update(  1, 2,0,0,0);
+  l02.update(val, 3,0,1,0);
+
+  qtensor< complex<double> > ret(1,3,1,3);
+  ret.update(l00, 0,0,0,0);
+  ret.update(l01, 0,0,0,1);
+  ret.update(l02, 0,0,0,2);
+  ret.update(l10, 0,1,0,0);
+  ret.update(l11, 0,1,0,1);
+  ret.update(l12, 0,1,0,2);
+  ret.update(l20, 0,2,0,0);
+  ret.update(l21, 0,2,0,1);
+  ret.update(l22, 0,2,0,2);
+  return ret;
+}
+
+qtensor< complex<double> > H_Potts_ledge(double f, double j, double p, double t)
+{
+  tensor< complex<double> > l00(1,4,1);
+  complex<double> val = -2*f*cos(p);
+  l00.update(val, 0,0,0);
+  l00.update(  1, 0,3,0);
+  tensor< complex<double> > l11(1,4,1);
+  val = -2*f*cos(p+2*PI/3);
+  l11.update(val, 0,0,0);
+  l11.update(  1, 0,3,0);
+  tensor< complex<double> > l22(1,4,1);
+  val = -2*f*cos(p+4*PI/3);
+  l22.update(val, 0,0,0);
+  l22.update(  1, 0,3,0);
+  val = -j*complex<double>(cos(t), sin(t));
+  tensor< complex<double> > l01(1,4,1);  // S
+  l01.update(val, 0,2,0);
+  tensor< complex<double> > l12(1,4,1);
+  l12.update(val, 0,2,0);
+  tensor< complex<double> > l20(1,4,1);
+  l20.update(val, 0,2,0);
+  val = -j*complex<double>(cos(t), -sin(t));
+  tensor< complex<double> > l10(1,4,1);  // S^d
+  l10.update(val, 0,1,0);
+  tensor< complex<double> > l21(1,4,1);
+  l21.update(val, 0,1,0);
+  tensor< complex<double> > l02(1,4,1);
+  l02.update(val, 0,1,0);
+
+  qtensor< complex<double> > ret(3,1,3);
+  ret.update(l00, 0,0,0);
+  ret.update(l01, 0,0,1);
+  ret.update(l02, 0,0,2);
+  ret.update(l10, 1,0,0);
+  ret.update(l11, 1,0,1);
+  ret.update(l12, 1,0,2);
+  ret.update(l20, 2,0,0);
+  ret.update(l21, 2,0,1);
+  ret.update(l22, 2,0,2);
+  return ret;
+}
+
+qtensor< complex<double> > H_Potts_redge(double f, double j, double p, double t)
+{
+  tensor< complex<double> > l00(1,4,1);
+  complex<double> val = -2*f*cos(p);
+  l00.update(  1, 0,0,0);
+  l00.update(val, 0,3,0);
+  tensor< complex<double> > l11(1,4,1);
+  val = -2*f*cos(p+2*PI/3);
+  l11.update(  1, 0,0,0);
+  l11.update(val, 0,3,0);
+  tensor< complex<double> > l22(1,4,1);
+  val = -2*f*cos(p+4*PI/3);
+  l22.update(  1, 0,0,0);
+  l22.update(val, 0,3,0);
+  tensor< complex<double> > l01(1,4,1);  // S
+  l01.update(  1, 0,1,0);
+  tensor< complex<double> > l12(1,4,1);
+  l12.update(  1, 0,1,0);
+  tensor< complex<double> > l20(1,4,1);
+  l20.update(  1, 0,1,0);
+  tensor< complex<double> > l10(1,4,1);  // S^d
+  l10.update(  1, 0,2,0);
+  tensor< complex<double> > l21(1,4,1);
+  l21.update(  1, 0,2,0);
+  tensor< complex<double> > l02(1,4,1);
+  l02.update(  1, 0,2,0);
+
+  qtensor< complex<double> > ret(3,1,3);
+  ret.update(l00, 0,0,0);
+  ret.update(l01, 0,0,1);
+  ret.update(l02, 0,0,2);
+  ret.update(l10, 1,0,0);
+  ret.update(l11, 1,0,1);
+  ret.update(l12, 1,0,2);
+  ret.update(l20, 2,0,0);
+  ret.update(l21, 2,0,1);
+  ret.update(l22, 2,0,2);
+  return ret;
+}

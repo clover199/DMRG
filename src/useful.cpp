@@ -9,6 +9,19 @@
   int add(int a, int b) {return a+b;}
 #endif
 
+
+void print_matrix(const vector< vector<int> >& map)
+{
+  cout << "Print matrix:" << endl;
+  for(int i=0;i<map.size();i++)
+  {
+    for(int j=0;j<map[i].size();j++) cout << map[i][j] << " ";
+    cout << endl;
+  }
+  cout << endl;
+}
+
+
 // generate the full array of all possible symmetries (sorted) given index 
 // i.e. index=[4,1,3], then
 // map=[ [0,0,0]
@@ -41,6 +54,19 @@ void generate_map(vector< vector<int> >& map, const vector<int>& index)
 }
 
 
+int get_dimension(const vector< vector<int> >& dim, const vector< vector<int> >& sym)
+{
+  int d = 0;
+  for(int i=0;i<sym.size();i++) 
+  {
+    int temp = 1;
+    for(int j=0;j<dim.size();j++) temp *= dim[j][sym[i][j]];
+    d += temp;
+  }
+  return d;
+}
+
+
 template <typename T>
 void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
                       const qtensor<T>& lenv, int lnum,
@@ -64,6 +90,7 @@ void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
   for(int i=0;i<dim.size();i++) index[i] = dim[i].size();
   vector< vector<int> > sym_ret;
   generate_map(sym_ret, index);
+  sym.clear();
   if(symmetry_sector!=-1) for(int i=0;i<sym_ret.size();i++)
   {
     int sum = 0;
@@ -82,4 +109,8 @@ template void generate_dim_sym(vector< vector<int> >& dim,
                                vector< vector<int> >& sym,
                                const qtensor<double>& lenv, int lnum,
                                const qtensor<double>& renv, int rnum);
+template void generate_dim_sym(vector< vector<int> >& dim,
+                               vector< vector<int> >& sym,
+                               const qtensor<complex<double> >& lenv, int lnum,
+                               const qtensor<complex<double> >& renv, int rnum);
 

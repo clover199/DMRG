@@ -506,7 +506,14 @@ int tensor<T>::svd(tensor& U, tensor<double>& S, tensor& V, int num)
   S.index_.resize(1);
   S.index_[0] = ret;
   S.val_.resize(ret);
-  
+
+  if(left*right==1)
+  {
+    U.val_[0] = 1;
+    V.val_[0] = val_[0]/abs(val_[0]);
+    S.val_[0] = abs(val_[0]);
+    return 1;
+  }
   zgesvd(begin(), left, right, S.begin(), U.begin(), V.begin());
   return ret;
 }

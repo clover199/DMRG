@@ -8,7 +8,7 @@
 
 extern string filename = "";
 extern bool print = false;
-extern int symmetry_sector = -1;
+extern int symmetry_sector = 0;
 
 int main(int argc, char *argv[])
 {
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   // ********** initialize the system **********
 
   vector<string> para_name; // name of the parameters
-  para_name = set_para_name("j","h");
+  para_name = set_para_name("f","j","s");
 
   int sites = 4;
   int cutoff = 10;
@@ -30,9 +30,11 @@ int main(int argc, char *argv[])
   vector<double> para( para_name.size(), 1.0 );
   para = set_para_val(argc, argv, sites, cutoff, sweep, symmetry_sector, para_name);
 
-  mpo<double> my_mpo(sites, H_Ising(para[0], para[1]));
-  my_mpo.edge(H_Ising_ledge(para[0], para[1]), H_Ising_redge(para[0], para[1]));
-  mps<double> my_mps(my_mpo);
+  symmetry_sector = para[2];
+  mpo< complex<double> > my_mpo(sites, H_Potts(para[0], para[1]));
+  my_mpo.edge(H_Potts_ledge(para[0], para[1]),
+              H_Potts_redge(para[0], para[1]));
+  mps< complex<double> > my_mps(my_mpo);
 
   dmrg(my_mps, my_mpo, cutoff, sweep);
   

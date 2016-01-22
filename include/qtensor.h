@@ -81,6 +81,9 @@ public:
 
   qtensor conjugate() const;
 
+  // remove the all-zero symmetry sectors
+  qtensor simplify() const;
+
   // exchange the two indexes at positions a, b (start from 0)
   // for a two-tensor and a=0, b=1, this is just matrix transpose.
   qtensor exchange(int a=0, int b=1) const;
@@ -136,7 +139,8 @@ public:
   bool get_map(vector< vector<int> >& map_ret, 
                vector< vector<int> >& dim_ret, vector< vector<int> >& sym_ret,
                const vector< vector<int> >& dim, const vector< vector<int> >& sym,
-               char transa='N', char transb='N', int num=1, double beta=0) const;
+               char transa='N', char transb='N',
+               int num=1, double beta=0, bool back=false) const;
 
   // SVD between first n and the rest indexes
   // A = U * S * V

@@ -84,7 +84,7 @@ void two_sites(int size, int cutoff, mps<double>& my_mps, mpo<double>& my_mpo)
     tt = tt.combine(2,3);
     tt = tt.combine(0,1);
     val = new double [d];
-    tt.eig(val, vecs);
+    tt.eig(val, vecs, symmetry_sector);
     cout << "Energy:\n";
     for(int i=0;i<d;i++) cout << "  " << val[i] << endl;
     data_energy << l << "\t" << r;
@@ -346,7 +346,7 @@ void move2left(int r, int cutoff, mps<double>& my_mps, mpo<double>& my_mpo)
 }
 
 
-void dmrg(mps<double> my_mps, mpo<double> my_mpo, int cutoff, int sweep)
+void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep)
 {
   int L = my_mps.size();
 

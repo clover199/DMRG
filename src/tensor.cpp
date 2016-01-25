@@ -106,7 +106,7 @@ void tensor<T>::print(bool all) const
   vector< vector<int> > map;
   generate_map(map, index_);
   cout << "Print all non-zero values of the tensor:\n"
-       << "index=(" << index_[0];
+       << "dimension=(" << index_[0];
   for(int i=1;i<index_.size();i++) cout << ", " << index_[i];
   cout << ") size=" << val_.size() << "\n";
 
@@ -151,20 +151,17 @@ void tensor<T>::print_matrix() const
 
 
 template <>
-tensor<double> tensor<double>::conjugate() const
+tensor<double> tensor<double>::conjugate()
 {
   return *this;
 }
 
 
 template <>
-tensor< complex<double> > tensor< complex<double> >::conjugate() const
+tensor< complex<double> > tensor< complex<double> >::conjugate()
 {
-  tensor< complex<double> > ret;
-  ret.index_ = index_;
-  ret.val_.resize(val_.size());
-  for(int i=0;i<val_.size();i++) ret.val_[i] = std::conj(val_[i]);
-  return ret;
+  for(int i=0;i<val_.size();i++) val_[i] = std::conj(val_[i]);
+  return *this;
 }
 
 
@@ -364,8 +361,8 @@ tensor<T>& tensor<T>::plus(const tensor& A, const tensor& B,
 
 
 template <typename T>
-tensor<T>& tensor<T>::contract(tensor& A, tensor& B,
-                                char transa, char transb, int num)
+tensor<T>& tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
+                               int num, bool cover)
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = A.index_.size()-num;
@@ -401,6 +398,7 @@ tensor<T>& tensor<T>::contract(tensor& A, tensor& B,
   int n = B.val_.size()/k;
 
   if(val_.size()==0) val_.resize(m*n);
+  else if(cover) val_ = vector<T> (m*n, 0);
   else if(val_.size()!=m*n)
   {
     cerr << "Warning in tensor contract: val_ size doesn't match "
@@ -413,7 +411,8 @@ tensor<T>& tensor<T>::contract(tensor& A, tensor& B,
 
 
 template <typename T>
-tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b)
+tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
+                               bool cover)
 {
   if(A.index_[a]!=B.index_[b])
   {
@@ -442,6 +441,7 @@ tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b)
 
   int dim = dim_();
   if(val_.size()==0) val_.resize(dim);
+  else if(cover) val_ = vector<T> (dim, 0);
   else if(val_.size()!=dim)
   {
     cerr << "Warning in tensor contract: val_ size doesn't match "
@@ -506,6 +506,18 @@ int tensor<T>::svd(tensor& U, tensor<double>& S, tensor& V, int num)
   S.index_.resize(1);
   S.index_[0] = ret;
   S.val_.resize(ret);
+
+  bool check = true;  // if all elements are zero
+  for(int i=0;i<val_.size();i++) if(abs(val_[i])>TOL) check = false;
+  if(check)
+  {
+    for(int i=0;i<U.val_.size();i++) U.val_[i] = 0;
+    for(int i=0;i<left;i++) U.val_[i*left+i] = 1;
+    for(int i=0;i<V.val_.size();i++) V.val_[i] = 0;
+    for(int i=0;i<right;i++) V.val_[i*right+i] = 1;
+    for(int i=0;i<S.val_.size();i++) S.val_[i] = 0;
+    return ret;
+  }
 
   if(left*right==1)
   {

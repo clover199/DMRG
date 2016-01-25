@@ -5,7 +5,7 @@
 template <typename T>
 void qtensor<T>::check_dim_(int n)
 {
-  for(int i=0;i<index_.size();i++)
+  for(int i=0;i<dim_.size();i++)
   {
     if( dim_[i][sym_[n][i]]==0 )
       dim_[i][sym_[n][i]] = val_[n].dimension(i);
@@ -20,18 +20,18 @@ template <typename T>
 qtensor<T>::qtensor(int i0, int i1, int i2, int i3,
                     int i4, int i5, int i6, int i7)
 {
-  index_.clear();
-  if(i0>0){ index_.push_back(i0); 
-  if(i1>0){ index_.push_back(i1);
-  if(i2>0){ index_.push_back(i2);
-  if(i3>0){ index_.push_back(i3);
-  if(i4>0){ index_.push_back(i4);
-  if(i5>0){ index_.push_back(i5);
-  if(i6>0){ index_.push_back(i6);
-  if(i7>0){ index_.push_back(i7); }}}}}}}}
+  vector<int> index; index.clear();
+  if(i0>0){ index.push_back(i0); 
+  if(i1>0){ index.push_back(i1);
+  if(i2>0){ index.push_back(i2);
+  if(i3>0){ index.push_back(i3);
+  if(i4>0){ index.push_back(i4);
+  if(i5>0){ index.push_back(i5);
+  if(i6>0){ index.push_back(i6);
+  if(i7>0){ index.push_back(i7); }}}}}}}}
   
-  dim_.resize(index_.size());
-  for(int i=0;i<dim_.size();i++) dim_[i].resize(index_[i]);
+  dim_.resize(index.size());
+  for(int i=0;i<dim_.size();i++) dim_[i].resize(index[i]);
 }
 
 
@@ -39,8 +39,6 @@ template <typename T>
 qtensor<T>::qtensor(T* val, const vector< vector<int> >& dim,
                     const vector< vector<int> >& sym)
 {
-  index_.resize(dim.size());
-  for(int i=0;i<index_.size();i++) index_[i] = dim[i].size();
   dim_ = dim;
   sym_ = sym;
   
@@ -48,16 +46,16 @@ qtensor<T>::qtensor(T* val, const vector< vector<int> >& dim,
   val_.resize(sym.size());
   for(int i=0;i<sym.size();i++)
   {
-    int add = 1;
-    val_[i].index_.resize(index_.size());
-    for(int j=0;j<index_.size();j++)
+    int d = 1;
+    val_[i].index_.resize(dim.size());
+    for(int j=0;j<dim.size();j++)
     {
       val_[i].index_[j] = dim[j][sym[i][j]];
-      add *= dim[j][sym[i][j]];
+      d *= dim[j][sym[i][j]];
     }
-    val_[i].val_.resize(add);
-    for(int j=0;j<add;j++) val_[i].val_[j] = val[count+j];
-    count += add;
+    val_[i].val_.resize(d);
+    for(int j=0;j<d;j++) val_[i].val_[j] = val[count+j];
+    count += d;
   }
 }
 						
@@ -77,14 +75,14 @@ void qtensor<T>::update(tensor<T>& val,
   if(i6>=0){ loc.push_back(i6);
   if(i7>=0){ loc.push_back(i7);}}}}}}}}
 
-  if( loc.size() == index_.size() )
+  if( loc.size() == dim_.size() )
   {
     bool check = true;
-    for(int i=0;i<loc.size();i++) if(loc[i]>=index_[i])
+    for(int i=0;i<loc.size();i++) if(loc[i]>=dim_[i].size())
     {
       cerr << "Error in tensor_quantum update: "
               "The input " << i+1 << "th index " << loc[i] 
-           << " is out of range 0~" << index_[i]-1 << endl;
+           << " is out of range 0~" << dim_[i].size()-1 << endl;
       check = false;
     }
     if(check)
@@ -103,13 +101,10 @@ void qtensor<T>::update(tensor<T>& val,
 template <typename T>
 void qtensor<T>::print() const
 {
-  if(index_.size()==0) cout << "Empty!" << endl;
+  if(dim_.size()==0) cout << "Empty!" << endl;
   else
   {
-    cout << "Dimension for the symmetry sectors: "
-         << "index=(" << index_[0];
-    for(int i=1;i<index_.size();i++) cout << ", " << index_[i];
-    cout << ")\n";
+    cout << "Dimension for different symmetry sectors:\n";
     for(int i=0;i<dim_.size();i++)
     {
       cout << "index=" << i << " : ";
@@ -120,7 +115,7 @@ void qtensor<T>::print() const
     for(int i=0;i<val_.size();i++)
     {
       cout << i << " symmetry: (" << sym_[i][0];
-      for(int j=1;j<index_.size();j++) cout << ", " << sym_[i][j];
+      for(int j=1;j<dim_.size();j++) cout << ", " << sym_[i][j];
       cout << ")  dimension: (" << val_[i].dimension(0);
       for(int j=1;j<val_[i].index();j++)
         cout << ", " << val_[i].dimension(j);
@@ -131,9 +126,35 @@ void qtensor<T>::print() const
 
 
 template <typename T>
+void qtensor<T>::print_all(bool all) const
+{
+  print();
+  for(int n=0;n<val_.size();n++)
+  {
+    cout << "Print all non-zero values of the tensor " << n << ":\n";
+    vector< vector<int> > map;
+    generate_map(map, val_[n].index_);
+    for(int i=0;i<val_[n].val_.size();i++) if(all)
+    {
+      cout << "(" << map[i][0];
+      for(int j=1;j<val_[n].index_.size();j++) cout << ", " << map[i][j];
+      cout << ") " << val_[n].val_[i] << "\n";
+    }
+    else if(abs(val_[n].val_[i])>TOL)
+    {
+      cout << "(" << map[i][0];
+      for(int j=1;j<val_[n].index_.size();j++) cout << ", " << map[i][j];
+      cout << ") " << val_[n].val_[i] << "\n";
+    }
+  }
+}
+
+
+template <typename T>
 void qtensor<T>::print_matrix() const
 {
-  if(2==index_.size())
+  cout.precision(3);
+  if(2==dim_.size())
   {
     cout << "Print the tensor_quantum as a matrix: \n";
     for(int n=0;n<val_.size();n++)
@@ -153,17 +174,16 @@ void qtensor<T>::print_matrix() const
       }
     }
   }
-  else cout << "This " << index_.size() << "-tensor cannot be printed "
+  else cout << "This " << dim_.size() << "-tensor cannot be printed "
                "as a matrix\n";
 }
 
 
 template<typename T>
-qtensor<T> qtensor<T>::conjugate() const
+qtensor<T> qtensor<T>::conjugate()
 {
-  qtensor<T> ret = *this;
-  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i].conjugate();
-  return ret;
+  for(int i=0;i<val_.size();i++) val_[i].conjugate();
+  return *this;
 }
 
 
@@ -171,17 +191,14 @@ template <typename T>
 qtensor<T> qtensor<T>::simplify() const
 {
   qtensor<T> ret;
-  ret.index_ = index_;
   ret.dim_ = dim_;
   ret.sym_.clear();
   ret.val_.clear();
-  vector<int> sym(sym_.size(),0);
-  for(int i=0;i<sym_.size();i++) for(int j=0;j<index_.size();j++)
-    sym[i] = sym[i]*index_[j]+sym_[i][j];
   for(int i=0;i<sym_.size();i++)
   {
     bool check = false;
-    for(int j=0;j<val_[i].val_.size();j++) if(abs(val_[i].val_[j])>TOL) check = true;
+    for(int j=0;j<val_[i].val_.size();j++)
+      if(abs(val_[i].val_[j])>TOL) check = true;
     if(check)
     {
       ret.sym_.push_back(sym_[i]);
@@ -195,17 +212,15 @@ qtensor<T> qtensor<T>::simplify() const
 template <typename T>
 qtensor<T> qtensor<T>::exchange(int a, int b) const
 {
-  if( a>=index_.size() or b>=index_.size() or a<0 or b<0)
+  if( a>=dim_.size() or b>=dim_.size() or a<0 or b<0)
   {
     cerr << "Error in tensor_quantum exchange: The input index number "
          << a << " and " << b 
-         << " is out of range 0~" << index_.size()-1 << endl;
+         << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
   
   qtensor<T> ret = *this; 
-  ret.index_[a] = index_[b];
-  ret.index_[b] = index_[a];
   ret.dim_[a] = dim_[b];
   ret.dim_[b] = dim_[a];
   for(int i=0;i<val_.size();i++)
@@ -221,23 +236,20 @@ qtensor<T> qtensor<T>::exchange(int a, int b) const
 template <typename T>
 qtensor<T> qtensor<T>::shift(int num) const
 {
-  if( num>=index_.size() or num<0)
+  if( num>=dim_.size() or num<0)
   {
     cerr << "Error in tensor_quantum transpose: The input index number "
-         << num << " is out of range 1~" << index_.size()-1 << endl;
+         << num << " is out of range 1~" << dim_.size()-1 << endl;
     return *this;
   }
   
   qtensor<T> ret = *this;
-  for(int i=0;i<index_.size();i++)
-  {
-    ret.index_[i] = index_[(i+num)%index_.size()];
-    ret.dim_[i] = dim_[(i+num)%index_.size()];
-  }
+  for(int i=0;i<dim_.size();i++)
+    ret.dim_[i] = dim_[(i+num)%dim_.size()];
   for(int i=0;i<val_.size();i++)
   {
-    for(int j=0;j<index_.size();j++)
-      ret.sym_[i] = sym_[(i+num)%index_.size()];
+    for(int j=0;j<dim_.size();j++)
+      ret.sym_[i] = sym_[(i+num)%dim_.size()];
     ret.val_[i] = val_[i].shift(num);
   }
   return ret; 
@@ -248,51 +260,50 @@ template <typename T>
 qtensor<T> qtensor<T>::combine(int min, int max) const
 {
   if(min==max) return *this;
-  if(min<0 or min>max or max>=index_.size())
+  if(min<0 or min>max or max>=dim_.size())
   {
     cerr << "Error in tensor_quantum combine: "
             "The imput indexes " << min << " " << max 
-         << " is out of range 0~" << index_.size()-1 << endl;
+         << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
-  
+
   qtensor<T> ret;
-  ret.index_.resize(index_.size()-(max-min));
-  for(int i=0;i<min;i++) ret.index_[i] = index_[i];
-  for(int i=max+1;i<index_.size();i++) ret.index_[i-(max-min)] = index_[i];
-
-  vector< vector<int> > map;
+  vector< vector<int> > map;  // all the possible symmetry combinations
   vector<int> sym_sum;
-  sym_sum.resize(max-min+1);
-  for(int s=0;s<max-min+1;s++) sym_sum[s] = index_[s+min];
+  sym_sum.resize(max-min+1);  // used as index for region min~max
+  for(int s=0;s<max-min+1;s++) sym_sum[s] = dim_[s+min].size();
   generate_map(map, sym_sum);
-  sym_sum = vector<int> (map.size(),0);
-  for(int i=0;i<map.size();i++) for(int s=0;s<max-min+1;s++)
-    sym_sum[i] = add(sym_sum[i], map[i][s]);
-  int sym = 0;
-  for(int i=0;i<sym_sum.size();i++) if(sym<sym_sum[i]) sym = sym_sum[i];
-  ret.index_[min] = ++sym;
-
-  ret.dim_.resize(ret.index_.size());
-  for(int i=0;i<min;i++) ret.dim_[i] = dim_[i];
-  for(int i=max+1;i<index_.size();i++) ret.dim_[i-(max-min)] = dim_[i];
-  
+  // calculate the dimension for each symmetry possibilities in map
   vector<int> sym_dim(map.size(),1);
   for(int i=0;i<map.size();i++) for(int s=0;s<max-min+1;s++)
     sym_dim[i] *= dim_[min+s][map[i][s]];
-  ret.dim_[min] = vector<int> (ret.index_[min], 0);
+  // calculate the total symmetry for all possibilities in map
+  sym_sum = vector<int> (map.size(),0);
+  for(int i=0;i<map.size();i++) for(int s=0;s<max-min+1;s++)
+    sym_sum[i] = add(sym_sum[i], map[i][s]);
+  int sym = 0;  // find symmetry number for the combined part
+  for(int i=0;i<sym_sum.size();i++) if(sym_sum[i]>sym) sym = sym_sum[i];
+
+
+  ret.dim_.resize(dim_.size()-(max-min));  // get dim_ for ret
+  for(int i=0;i<min;i++) ret.dim_[i] = dim_[i];
+  for(int i=max+1;i<dim_.size();i++) ret.dim_[i-(max-min)] = dim_[i];
+  ret.dim_[min] = vector<int> (sym+1, 0);
   for(int i=0;i<sym_dim.size();i++) ret.dim_[min][sym_sum[i]] += sym_dim[i];
 
-  generate_map(map, ret.index_);
+  vector<int> index(ret.dim_.size(), 0);  // index for ret
+  for(int i=0;i<index.size();i++) index[i] = ret.dim_[i].size();
+  generate_map(map, index);  // all possible symmetries for ret
   vector<bool> check(map.size(), false);
   for(int t=0;t<val_.size();t++)
   {
-    vector<int> loc (ret.index_.size(), 0);
+    vector<int> loc (index.size(), 0);
     for(int i=0;i<min;i++) loc[i] = sym_[t][i];
     for(int i=min;i<=max;i++) loc[min] = add(loc[min], sym_[t][i]);
-    for(int i=max+1;i<index_.size();i++) loc[i-(max-min)] = sym_[t][i];
+    for(int i=max+1;i<dim_.size();i++) loc[i-(max-min)] = sym_[t][i];
     int k = 0;
-    for(int i=0;i<loc.size();i++) k = k*ret.index_[i] + loc[i];
+    for(int i=0;i<loc.size();i++) k = k*index[i] + loc[i];
     check[k] = true;
   }
   int count = 0;  // count the number of different possible symmetry sectors
@@ -304,40 +315,41 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   for(int t=0;t<check.size();t++) if(check[t])
   {
     ret.sym_[count] = map[t];
-    ret.val_[count].index_.resize(ret.index_.size());
-    for(int i=0;i<ret.index_.size();i++)
+    ret.val_[count].index_.resize(index.size());
+    for(int i=0;i<index.size();i++)
       ret.val_[count].index_[i] = ret.dim_[i][map[t][i]];
     ret.val_[count].val_.resize(ret.val_[count].dim_());
     count++;
   }
   map.clear();
 
-  // construct the beginning of the symmetry sectors 
-  vector<int> store(ret.index_[min],0);
-  vector<int> temp(ret.index_[min],0);
+  // construct the beginning of the symmetry sectors in sym_dim
+  vector<int> store(index[min],0);  // store the beginning for each sector
   for(int i=0;i<sym_dim.size();i++)
   {
-    temp[sym_sum[i]] = sym_dim[i];
+    int temp = sym_dim[i];
     sym_dim[i] = store[sym_sum[i]];
-    store[sym_sum[i]] += temp[sym_sum[i]];
+    store[sym_sum[i]] += temp;
   }
   
   for(int t=0;t<val_.size();t++)
   {
-    int loc = -1;
-    int sum = 0;
+    int loc = -1;  // location in ret.val_
+    int sum = 0;  // sum of symmetry
     for(int i=min;i<=max;i++) sum = add(sum, sym_[t][i]);
     for(int s=0;s<ret.sym_.size();s++) if(sum == ret.sym_[s][min])
     {
       bool test = true;
-      for(int i=0;i<min;i++) if(sym_[t][i] != ret.sym_[s][i]) test = false;
-      for(int i=max+1;i<index_.size();i++)
+      for(int i=0;i<min;i++)
+        if(sym_[t][i] != ret.sym_[s][i]) test = false;
+      for(int i=max+1;i<dim_.size();i++)
         if(sym_[t][i] != ret.sym_[s][i-(max-min)]) test = false;
       if(test) loc = s;
     }
-    if(loc==-1) cerr << "Error in tensor_quantum combine: cannot find sector!\n";
+    if(loc==-1)
+      cerr << "Error in tensor_quantum combine: cannot find sector!\n";
     int beg = 0;
-    for(int i=min;i<=max;i++) beg = beg*index_[i] + sym_[t][i];
+    for(int i=min;i<=max;i++) beg = beg*dim_[i].size() + sym_[t][i];
     beg = sym_dim[beg];
 
     int l = 1;
@@ -345,7 +357,7 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
     int m = 1;
     for(int i=min;i<=max;i++) m *= val_[t].index_[i];
     int r = 1;
-    for(int i=max+1;i<index_.size();i++) r *= val_[t].index_[i];
+    for(int i=max+1;i<dim_.size();i++) r *= val_[t].index_[i];
     int size = ret.val_[loc].val_.size();
     for(int i=0;i<l;i++) for(int j=0;j<m;j++) for(int k=0;k<r;k++)
       ret.val_[loc].val_[i*(size/l)+(j+beg)*r+k] = val_[t].val_[i*m*r+j*r+k];
@@ -355,19 +367,14 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
 
 
 template <typename T>
-qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
+qtensor<T> qtensor<T>::split(int n, vector< vector<int> > dim) const
 {
   qtensor<T> ret;
-  ret.index_.resize(index_.size()+dim.size()-1);
-  for(int i=0;i<index;i++) ret.index_[i] = index_[i];
-  for(int i=0;i<dim.size();i++) ret.index_[index+i] = dim[i].size();
-  for(int i=index+dim.size();i<ret.index_.size();i++)
-    ret.index_[i] = index_[i-dim.size()+1];
   
-  ret.dim_.resize(index_.size()+dim.size()-1);
-  for(int i=0;i<index;i++) ret.dim_[i] = dim_[i];
-  for(int i=0;i<dim.size();i++) ret.dim_[index+i] = dim[i];
-  for(int i=index+dim.size();i<ret.index_.size();i++)
+  ret.dim_.resize(dim_.size()+dim.size()-1);
+  for(int i=0;i<n;i++) ret.dim_[i] = dim_[i];
+  for(int i=0;i<dim.size();i++) ret.dim_[n+i] = dim[i];
+  for(int i=n+dim.size();i<ret.dim_.size();i++)
     ret.dim_[i] = dim_[i-dim.size()+1];
 
   vector<int> index_new;  // used to get the index for the splitting part
@@ -375,9 +382,9 @@ qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
   for(int i=0;i<index_new.size();i++) index_new[i] = dim[i].size();
   vector< vector<int> > map;
   generate_map(map, index_new);
-  vector< vector<int> > sym_dim;
-  index_new.resize(index_[index]);
+  index_new.resize(dim_[n].size());
   for(int i=0;i<index_new.size();i++) index_new[i] = 0;  //used to store the beg
+  vector< vector<int> > sym_dim;  // for splitting part
   sym_dim.resize(map.size());
   for(int i=0;i<map.size();i++)
   {
@@ -386,20 +393,20 @@ qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
     for(int s=0;s<dim.size();s++) sym_dim[i][0] = add(sym_dim[i][0], map[i][s]);
     sym_dim[i][1] = 1; // dimension
     for(int s=0;s<dim.size();s++) sym_dim[i][1] *= dim[s][map[i][s]];
-    sym_dim[i][2] = index_new[sym_dim[i][0]];
+    sym_dim[i][2] = index_new[sym_dim[i][0]]; // beg
     index_new[sym_dim[i][0]] += sym_dim[i][1];
   }
-  index_new.resize(ret.index_.size());
+  index_new.resize(ret.dim_.size());
   tensor<T> temp;
   for(int t=0;t<sym_.size();t++) for(int s=0;s<sym_dim.size();s++)
-  if(sym_dim[s][0]==sym_[t][index])
+  if(sym_dim[s][0]==sym_[t][n])
   {
     bool check = false;
     int l = 1;
-    for(int i=0;i<index;i++) l *= val_[t].index_[i];
-    int m = val_[t].index_[index];
+    for(int i=0;i<n;i++) l *= val_[t].index_[i];
+    int m = val_[t].index_[n];
     int r = 1;
-    for(int i=index+1;i<index_.size();i++) r *= val_[t].index_[i];
+    for(int i=n+1;i<dim_.size();i++) r *= val_[t].index_[i];
     temp.val_.resize(l*sym_dim[s][1]*r);
     int count =0;
     for(int i=0;i<l;i++) for(int j=0;j<sym_dim[s][1];j++) for(int k=0;k<r;k++)
@@ -410,9 +417,9 @@ qtensor<T> qtensor<T>::split(int index, vector< vector<int> > dim) const
     } 
     if(check)
     {
-      for(int i=0;i<index;i++) index_new[i] = sym_[t][i];
-      for(int i=0;i<dim.size();i++) index_new[index+i] = map[s][i];
-      for(int i=index;i<index_.size();i++) index_new[i+dim.size()] = sym_[t][i];
+      for(int i=0;i<n;i++) index_new[i] = sym_[t][i];
+      for(int i=0;i<dim.size();i++) index_new[n+i] = map[s][i];
+      for(int i=n;i<dim_.size();i++) index_new[i+dim.size()] = sym_[t][i];
       ret.sym_.push_back(index_new);
       temp.index_.resize(index_new.size());
       for(int i=0;i<index_new.size();i++)
@@ -428,13 +435,12 @@ template <typename T>
 qtensor<T> qtensor<T>::remove_symmetry() const
 {
   qtensor<T> ret;
-  ret.index_ = vector<int> (index_.size(),1);
   ret.dim_.resize(dim_.size());
   for(int i=0;i<dim_.size();i++) ret.dim_[i] = vector<int> (1,dimension(i));
   ret.sym_.resize(1);
-  ret.sym_[0] = vector<int> (index_.size(),0);
+  ret.sym_[0] = vector<int> (dim_.size(),0);
   ret.val_.resize(1);
-  ret.val_[0].index_.resize(index_.size());
+  ret.val_[0].index_.resize(dim_.size());
   for(int i=0;i<dim_.size();i++) ret.val_[0].index_[i] = ret.dim_[i][0];
   ret.val_[0].val_ = vector<T> (dimension(),0);
   for(int i=0;i<val_.size();i++)
@@ -444,7 +450,7 @@ qtensor<T> qtensor<T>::remove_symmetry() const
     {
       generate_map(map, val_[i].index_);
       int loc = 0;
-      for(int s=0;s<index_.size();s++)
+      for(int s=0;s<dim_.size();s++)
       {
         int sum = map[j][s];
         for(int k=0;k<sym_[i][s];k++) sum += dim_[s][k];
@@ -458,33 +464,32 @@ qtensor<T> qtensor<T>::remove_symmetry() const
 
 
 template <typename T>
-qtensor<T> qtensor<T>::cut(int index, vector<int> cutoff) const
+qtensor<T> qtensor<T>::cut(int n, vector<int> cutoff) const
 {
-  if( index>=index_.size() or index<0)
+  if( n>=dim_.size() or n<0)
   {
     cerr << "Error in tensor_quantum cut: The input index number "
-         << index << " is out of range 0~" << index_.size()-1 << endl;
+         << n << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
   
-  if(cutoff.size()!=index_[index])
+  if(cutoff.size()!=dim_[n].size())
   {
     cerr << "Error in tensor_quantum cut: The input cut size "
          << cutoff.size() << " doesn't match sector number "
-         << index_[index] << endl;
+         << dim_[n].size() << endl;
     return *this;
   }
   
   qtensor<T> ret;
-  ret.index_ = index_;
-  ret.dim_.resize(index_.size());
-  for(int i=0;i<index_.size();i++) ret.dim_[i].resize(index_[i]);
+  ret.dim_.resize(dim_.size());
+  for(int i=0;i<dim_.size();i++) ret.dim_[i].resize(dim_[i].size());
   ret.sym_ = sym_;
   ret.val_.resize(val_.size());
 
   for(int i=0;i<val_.size();i++)
   {
-    ret.val_[i] = val_[i].resize(index, cutoff[sym_[i][index]]);
+    ret.val_[i] = val_[i].resize(n, cutoff[sym_[i][n]]);
     ret.check_dim_(i);
   }
   return ret;
@@ -495,12 +500,6 @@ template <typename T>
 qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
                               T alpha, T beta)
 {
-  if( A.index_ != B.index_ )
-  {
-    cerr << "Error in tensor_quantum plus: "
-            "indexes do not match.\n" ;
-    return *this;
-  }
   if( A.dim_ != B.dim_ )
   {
     cerr << "Error in tensor_quantum plus: "
@@ -514,7 +513,6 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
     return *this;
   }
   
-  index_ = A.index_;
   dim_ = A.dim_;
   sym_ = A.sym_;
   val_.resize(A.val_.size());
@@ -528,83 +526,68 @@ qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
                                   char transa, char transb, int num)
 {
   int indexa = 0;
-  if( 'N'==transa or 'n'==transa ) indexa = A.index_.size()-num;
-  int indexb = B.index_.size()-num;
+  if( 'N'==transa or 'n'==transa ) indexa = A.dim_.size()-num;
+  int indexb = B.dim_.size()-num;
   if( 'N'==transb or 'n'==transb ) indexb = 0;
- 
-  bool check = false;  // check symmetry
-  for(int i=0;i<num;i++) if(A.index_[indexa+i]!=B.index_[indexb+i]) check = true;
-  if(check)
-  {
-    cerr << "Error in tensor_quantum contract: The symmetries are not the same.\n"
-         << "A: ";
-    for(int i=0;i<num;i++) cerr << A.index_[indexa+i] << " ";
-    cerr << "\nB: ";
-    for(int i=0;i<num;i++) cerr << B.index_[indexb+i] << " ";
-    cerr << endl;
-    return *this;
-  }
 
   // check dimension
   for(int i=0;i<num;i++) if(A.dim_[indexa+i]!=B.dim_[indexb+i])
   {
     cerr << "Error in tensor_quantum contract: "
-            "The dimensions are not the same for i=" << i << ".\n";
-    cerr << "A: ";
+            "The dimensions are not the same for:\n";
+    cerr << "index=" << indexa+i << " A: ";
     for(int j=0;j<A.dim_[indexa+i].size();j++) cerr << A.dim_[indexa+i][j] << " ";
-    cerr << "\nB: ";
+    cerr << endl << "index=" << indexb+i << " B: ";
     for(int j=0;j<B.dim_[indexb+i].size();j++) cerr << B.dim_[indexb+i][j] << " ";
     cerr << endl;
     return *this;
   }
   
-  int add = 0;
-  index_.resize(A.index_.size()+B.index_.size()-2*num);
-  for(int i=0;i<A.index_.size();i++) if(i<indexa or i>=indexa+num)
-    index_[add++] = A.index_[i];
-  for(int i=0;i<B.index_.size();i++) if(i<indexb or i>=indexb+num)
-    index_[add++] = B.index_[i];
+  int ad = 0;
 
-  dim_.resize(index_.size());
-  for(int i=0;i<index_.size();i++) dim_[i] = vector<int>(index_[i],0);
+  dim_.resize(A.dim_.size()+B.dim_.size()-2*num);
+  for(int i=0;i<A.dim_.size();i++) if(i<indexa or i>=indexa+num)
+    dim_[ad++] = A.dim_[i];
+  for(int i=0;i<B.dim_.size();i++) if(i<indexb or i>=indexb+num)
+    dim_[ad++] = B.dim_[i];
 
-  int ab = A.val_.size()*B.val_.size();
-  sym_.resize(ab);
+  sym_.clear();
   val_.clear();
-  val_.resize(ab);
-  vector<int> map(ab,0);  // used to check if the symmetry sector exists.
-  int count = 0;
+  vector<int> sym(dim_.size(),0);
+  vector<int> map;  // used to check if the sym already exists
   for(int i=0;i<A.val_.size();i++) for(int j=0;j<B.val_.size();j++)
   {
-    check = true;
+    bool check = true;
     for(int k=0;k<num;k++) if(A.sym_[i][indexa+k]!= B.sym_[j][indexb+k])
       check = false;
 
     if(check)
     {
-      add = 0;
-      sym_[count].resize(index_.size());
-      for(int k=0;k<A.index_.size();k++) if(k<indexa or k>=indexa+num)
-        sym_[count][add++] = A.sym_[i][k];
-      for(int k=0;k<B.index_.size();k++) if(k<indexb or k>=indexb+num)
-        sym_[count][add++] = B.sym_[j][k];
-      for(int s=0;s<index_.size();s++)
-        map[count] = map[count]*index_[s]+sym_[count][s];
+      ad = 0;
+      for(int k=0;k<A.dim_.size();k++) if(k<indexa or k>=indexa+num)
+        sym[ad++] = A.sym_[i][k];
+      for(int k=0;k<B.dim_.size();k++) if(k<indexb or k>=indexb+num)
+        sym[ad++] = B.sym_[j][k];
+
+      int loc = 0;
+      for(int s=0;s<dim_.size();s++)
+        loc = loc*dim_[s].size()+sym[s];
       bool same = false;
-      for(int t=0;t<count;t++) if(map[count]==map[t])
+      for(int t=0;t<map.size();t++) if(loc==map[t])
       {
         val_[t].contract(A.val_[i], B.val_[j], transa, transb, num);
         same = true;
       }
       if(not same)
       {
-        val_[count].contract(A.val_[i], B.val_[j], transa, transb, num);
-        check_dim_(count++);
+        map.push_back(loc);
+        sym_.push_back(sym);
+        val_.resize(sym_.size());
+        val_[val_.size()-1].contract(A.val_[i], B.val_[j], transa, transb, num, true);
       }
     }
   }
-  sym_.resize(count);
-  val_.resize(count);
+  for(int i=0;i<val_.size();i++) check_dim_(i);
   return *this;
 }
 
@@ -613,63 +596,52 @@ template <typename T>
 qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
                                  const qtensor<T>& B, int b)
 {
-  if(A.index_[a]!=B.index_[b])
+  if(A.dim_[a]!=B.dim_[b])
   {
-    cerr << "Error in tensor_quantum contract: symmetry sector doesn't match. "
-         << A.index_[a] << "!=" << B.index_[b] << endl;
+    cerr << "Error in tensor_quantum contract: dimension doesn't match.\n"
+         << "A: ";
+    for(int i=0;i<A.dim_[a].size();i++) cout << A.dim_[a][i] << "\t";
+    cerr << endl << "B: ";
+    for(int i=0;i<B.dim_[b].size();i++) cout << B.dim_[b][i] << "\t";
+    cerr << endl;
     return *this;
   }
-  for(int i=0;i<A.index_[a];i++) if(A.dim_[a][i]!=B.dim_[b][i])
-  {
-    cerr << "Error in tensor_quantum contract: "
-            "dimension of symmetry sector " << i << " doesn't match. "
-         << A.dim_[a][i] << "!=" << B.dim_[b][i] << endl;
-    return *this;
-  }
-  
-  index_.resize(A.index_.size()+B.index_.size()-2);
-  for(int i=0;i<a;i++) index_[i] = A.index_[i];
-  for(int i=a;i<a+b;i++) index_[i] = B.index_[i-a];
-  for(int i=a+b;i<a+B.index_.size()-1;i++)
-    index_[i] = B.index_[i-a+1];
-  for(int i=a+B.index_.size()-1;i<index_.size();i++)
-    index_[i] = A.index_[i-B.index_.size()+2];
 
-  dim_.resize(index_.size());
-  for(int i=0;i<index_.size();i++) dim_[i] = vector<int>(index_[i],0);
+  dim_.resize(A.dim_.size()+B.dim_.size()-2);
+  for(int i=0;i<a;i++) dim_[i] = A.dim_[i];
+  for(int i=a;i<a+b;i++) dim_[i] = B.dim_[i-a];
+  for(int i=a+b;i<a+B.dim_.size()-1;i++) dim_[i] = B.dim_[i-a+1];
+  for(int i=a+B.dim_.size()-1;i<dim_.size();i++) dim_[i] = A.dim_[i-B.dim_.size()+2];
 
-  int ab = A.val_.size()*B.val_.size();
-  sym_.resize(ab);
+  sym_.clear();
   val_.clear();
-  val_.resize(ab);
-  vector<int> map(ab,0);
-  int count=0;
+  vector<int> sym(dim_.size(),0);
+  vector<int> map;  // used to check if the sym already exists
+
   for(int l=0;l<A.val_.size();l++) for(int r=0;r<B.val_.size();r++)
   if(A.sym_[l][a]==B.sym_[r][b])
   {
-    sym_[count].resize(index_.size());
-    for(int i=0;i<a;i++) sym_[count][i] = A.sym_[l][i];
-    for(int i=a;i<a+b;i++) sym_[count][i] = B.sym_[r][i-a];
-    for(int i=a+b;i<a+B.index_.size()-1;i++)
-      sym_[count][i] = B.sym_[r][i-a+1];
-    for(int i=a+B.index_.size()-1;i<index_.size();i++)
-      sym_[count][i] = A.sym_[l][i-B.index_.size()+2];
-    for(int s=0;s<index_.size();s++)
-      map[count] = map[count]*index_[s]+sym_[count][s];
+    for(int i=0;i<a;i++) sym[i] = A.sym_[l][i];
+    for(int i=a;i<a+b;i++) sym[i] = B.sym_[r][i-a];
+    for(int i=a+b;i<a+B.dim_.size()-1;i++) sym[i] = B.sym_[r][i-a+1];
+    for(int i=a+B.dim_.size()-1;i<dim_.size();i++) sym[i] = A.sym_[l][i-B.dim_.size()+2];
+
+    int loc = 0;
+    for(int s=0;s<sym.size();s++) loc = loc*dim_[s].size()+sym[s];
     bool same = false;
-    for(int t=0;t<count;t++) if(map[count]==map[t])
+    for(int t=0;t<map.size();t++) if(loc==map[t])
     {
       val_[t].contract(A.val_[l], a, B.val_[r], b);
       same = true;
     }
     if(not same)
     {
-      val_[count].contract(A.val_[l], a, B.val_[r], b);
-      check_dim_(count++);
+      map.push_back(loc);
+      sym_.push_back(sym);
+      val_.resize(sym_.size());
+      val_[val_.size()-1].contract(A.val_[l], a, B.val_[r], b, true);
     }
   }
-  sym_.resize(count);
-  val_.resize(count);
   for(int i=0;i<val_.size();i++) check_dim_(i);
   return *this;
 }
@@ -695,47 +667,26 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
                          char transa, char transb, int num, double beta, bool back) const
 {
   int indexa = 0;
-  if( 'N'==transa or 'n'==transa ) indexa = index_.size()-num;
+  if( 'N'==transa or 'n'==transa ) indexa = dim_.size()-num;
   int indexb = dim.size()-num;
   if( 'N'==transb or 'n'==transb ) indexb = 0;
-
-  bool check = false;  // check symmetry
-  for(int i=0;i<num;i++) if(index_[indexa+i]!=dim[indexb+i].size()) check = true;
-  if(check)
-  {
-    cerr << "Error in tensor_quantum get_map: The symmetries are not the same.\n"
-         << "Tensor: ";
-    for(int i=0;i<num;i++) cerr << index_[indexa+i] << " ";
-    cerr << "\nArray:  ";
-    for(int i=0;i<num;i++) cerr << dim[indexb+i].size() << " ";
-    cerr << endl;
-    return false;
-  }
 
   // check dimension
   for(int i=0;i<num;i++) if(dim_[indexa+i]!=dim[indexb+i])
   {
     cerr << "Error in tensor_quantum get_map: "
             "The dimensions are not the same for i=" << i << ".\n";
-    cerr << "tensor: ";
+    cerr << "index=" << indexa+i << " tensor: ";
     for(int j=0;j<dim_[indexa+i].size();j++) cerr << dim_[indexa+i][j] << " ";
-    cerr << "\narray:  ";
+    cerr << endl << "index=" << indexb+i << " array:  ";
     for(int j=0;j<dim[indexb+i].size();j++) cerr << dim[indexb+i][j] << " ";
     cerr << endl;
     return false;
   }
 
   int ad = 0;
-  vector<int> index;  // index for the new tensor
-  index.resize(index_.size()+dim.size()-2*num, 0);
-  for(int i=0;i<index_.size();i++) if(i<indexa or i>=indexa+num)
-    index[ad++] = index_[i];
-  for(int i=0;i<dim.size();i++) if(i<indexb or i>=indexb+num)
-    index[ad++] = dim[i].size();
-
-  ad = 0;
-  dim_ret.resize(index.size());  // get dim_ret
-  for(int i=0;i<index_.size();i++) if(i<indexa or i>=indexa+num)
+  dim_ret.resize(dim_.size()+dim.size()-2*num);  // get dim_ret
+  for(int i=0;i<dim_.size();i++) if(i<indexa or i>=indexa+num)
     dim_ret[ad++] = dim_[i];
   for(int i=0;i<dim.size();i++) if(i<indexb or i>=indexb+num)
     dim_ret[ad++] = dim[i];
@@ -752,66 +703,71 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
   sym_dim[0][2] = 0;
   for(int i=1;i<sym.size();i++) sym_dim[i][2] = sym_dim[i-1][2] + sym_dim[i-1][0];
 
-  int ab = val_.size()*sym.size();
-  map_ret.resize(ab);
-  sym_ret.resize(ab);
-  vector<int> map(ab,0);  // used to check if the symmetry sector exists.
-  vector<int> map_dim(ab+1,0); // used to store the beginning of the sym_ret
-  int count_map = 0;
-  int count_sym = 0;
+  map_ret.clear();
+  if(not back) sym_ret.clear();
+  vector<int> sym_store(dim_ret.size(), 0);
+  vector<int> map_store(6, 0);  // index, in_beg, out_beg, row, col, beta
+  vector<int> map;  // used to check if the symmetry sector exists.
+  vector<int> map_dim(1, 0);  // used to store the beginning of the sym_ret
+  if(back)
+  {
+    map = vector<int> (sym_ret.size(), 0);
+    for(int i=0;i<map.size();i++) for(int j=0;j<dim_ret.size();j++)
+      map[i] = map[i]*dim_ret[j].size() + sym_ret[i][j];
+    map_dim = vector<int> (sym_ret.size(), 0);
+    for(int i=1;i<map_dim.size();i++)
+    {
+      int d = 1;
+      for(int j=0;j<dim_ret.size();j++) d *= dim_ret[j][sym_ret[i][j]];
+      map_dim[i] = map_dim[i-1] + d;
+    }
+  }
+  vector<bool> first(map.size(), true);  // used when back=true
   for(int i=0;i<val_.size();i++) for(int j=0;j<sym.size();j++)
   {
-    check = true;
+    bool check = true;
     for(int k=0;k<num;k++) if(sym_[i][indexa+k]!= sym[j][indexb+k])
       check = false;
     if(check)
     {
-      sym_ret[count_sym].resize(index.size());
+      map_store[0] = i;
+      map_store[1] = sym_dim[j][2];
+      map_store[2] = map_dim.back();  // may change
+      map_store[3] = sym_dim[j][1];
+      map_store[4] = sym_dim[j][0]/sym_dim[j][1];
+      map_store[5] = beta;  // may change
+
       ad = 0;
-      for(int k=0;k<index_.size();k++) if(k<indexa or k>=indexa+num)
-        sym_ret[count_sym][ad++] = sym_[i][k];
+      for(int k=0;k<dim_.size();k++) if(k<indexa or k>=indexa+num)
+        sym_store[ad++] = sym_[i][k];
       for(int k=0;k<dim.size();k++) if(k<indexb or k>=indexb+num)
-        sym_ret[count_sym][ad++] = sym[j][k];
-      if(back)
-      {
-        int sum=0;
-        for(int k=0;k<index.size();k++)
-          sum = add(sum, sym_ret[count_sym][k]);
-        if(sum!=symmetry_sector) check = false;
-      }
-    }
-    if(check)
-    {
-      map[count_sym] = 0;
-      for(int s=0;s<index.size();s++)
-        map[count_sym] = map[count_sym]*index[s]+sym_ret[count_sym][s];
-      map_ret[count_map].resize(6);
-      map_ret[count_map][0] = i;
-      map_ret[count_map][1] = sym_dim[j][2];
-      map_ret[count_map][2] = map_dim[count_sym];
-      map_ret[count_map][3] = sym_dim[j][1];
-      map_ret[count_map][4] = sym_dim[j][0]/sym_dim[j][1];
-      map_ret[count_map][5] = beta;
+        sym_store[ad++] = sym[j][k];
+      int loc = 0;
+      for(int s=0;s<dim_ret.size();s++) loc = loc*dim_ret[s].size()+sym_store[s];
       bool same = false;
-      for(int t=0;t<count_sym;t++) if(map[count_sym]==map[t])
+      for(int t=0;t<map.size();t++) if(loc==map[t])
       {
-        map_ret[count_map][2] = map_dim[t];
-        map_ret[count_map][5] = 1;
+        map_store[2] = map_dim[t];
+        if(back and first[t])
+          first[t] = false;
+        else
+          map_store[5] = 1;
+        map_ret.push_back(map_store);
         same = true;
       }
-      if(not same)
+      if( (not same) and (not back))
       {
-        map_dim[count_sym+1] = 1;
-        for(int s=0;s<index.size();s++)
-          map_dim[count_sym+1] *= dim_ret[s][sym_ret[count_sym][s]];
-        map_dim[count_sym+1] += map_dim[count_sym];
-        count_sym++;
+        int d = 1;
+        for(int s=0;s<dim_ret.size();s++)
+          d *= dim_ret[s][sym_store[s]];
+        d += map_dim.back();
+        map_dim.push_back(d);
+        map.push_back(loc);
+        sym_ret.push_back(sym_store);
+        map_ret.push_back(map_store);
       }
-      count_map++;
     }
   }
-  map_ret.resize(count_map);
-  sym_ret.resize(count_sym);
   return true;  
 }
 
@@ -820,15 +776,15 @@ template <typename T>
 vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
                                int num, int cutoff)
 {
-  if( num>=index_.size() or num<=0 )
+  if( num>=dim_.size() or num<=0 )
   {
     cerr << "Error in tensor_quantum svd: "
-            "The number of left indexes should be 1~"<< index_.size()-1 << endl;
+            "The number of left indexes should be 1~"<< dim_.size()-1 << endl;
     return vector<double>();
   }
   
   qtensor<T> comb;
-  comb = combine(num, index_.size()-1);
+  comb = combine(num, dim_.size()-1);
   comb = comb.combine(0, num-1);
 
   int sym = add(comb.sym_[0][0], comb.sym_[0][1]);
@@ -842,12 +798,6 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     comb = comb.remove_symmetry();
     return comb.svd(U, S, V, num, cutoff);
   }
-  
-  U.index_ = comb.index_;
-  U.index_[1] = U.index_[0];
-  V.index_ = comb.index_;
-  V.index_[0] = V.index_[1];
-  S.index_ = comb.index_;
 
   U.dim_ = comb.dim_;
   U.dim_[1] = U.dim_[0];
@@ -953,7 +903,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   dim.resize(num);
   for(int i=0;i<num;i++) dim[i] = dim_[i];
   U = U.split(0, dim);
-  dim.resize(index_.size()-num);
+  dim.resize(dim_.size()-num);
   for(int i=0;i<dim.size();i++) dim[i] = dim_[i+num];
   V = V.split(1, dim);
   return s;
@@ -963,19 +913,19 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
 template <typename T>
 int qtensor<T>::eig(double* val, T* vec, int sector)
 {
-  if(index_.size()!=2)
+  if(dim_.size()!=2)
   {
     cerr << "Error in tensor_quantum eig: cannot diagonalize. "
-            "This is a " << index_.size() << "-tensor.";
+            "This is a " << dim_.size() << "-tensor.";
     return 0;
   }
-  if(index_[0]!=index_[1])
+  if(dim_[0].size()!=dim_[1].size())
   {
     cerr << "Error in tensor_quantum eig: the symmetries are not the same.\n"
-         << index_[0] << "!=" << index_[1] << endl;
+         << dim_[0].size() << "!=" << dim_[1].size() << endl;
     return 0;
   }
-  for(int i=0;i<index_[0];i++) if(dim_[0][i]!=dim_[1][i])
+  for(int i=0;i<dim_[0].size();i++) if(dim_[0][i]!=dim_[1][i])
   {
     cerr << "Error in tensor_quantum eig: the symmetry sector " << i
          << " is not square.\n"

@@ -67,7 +67,7 @@ public:
     }
   }
 
-  tensor conjugate() const;
+  tensor conjugate();
 
   // exchange the two indexes at positions a, b (start from 0)
   // for a two-tensor and a=0, b=1, this is just matrix transpose.
@@ -97,8 +97,8 @@ public:
   
   // contract tensor A and B with the num left/right most index
   // the result is added to the original tensor (if not empty);
-  tensor& contract(tensor& A, tensor& B,
-                   char transa='N', char transb='N', int num=1);
+  tensor& contract(tensor& A, tensor& B, char transa='N', char transb='N',
+                   int num=1, bool cover=false);
   
   tensor operator*(tensor& A) {
     tensor<T> ret;
@@ -109,7 +109,9 @@ public:
   // contract index a of tensor A with index b of tensor B
   // the final index has the form
   // A0 A1 A2 ... Aa-1 B0 B1 ... Bm Aa+1 ... An
-  tensor& contract(const tensor& A, int a, const tensor& B, int b);
+  // if cover = false, the result tensor will be added to the original one
+  // if cover = true, the original tensor will be destroyed.
+  tensor& contract(const tensor& A, int a, const tensor& B, int b, bool cover=false);
   
   // multiply the tensor by an array (as a matrix)
   // only multiply the 'num' left/right most index

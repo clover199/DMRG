@@ -137,8 +137,8 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 
   if (info<0)
   {
-    cout << "Error with znaupd, info = " << info << "\n";
-    cout << "Check documentation in dsaupd\n\n";
+    cerr << "Error with znaupd, info = " << info << "\n";
+    cerr << "Check documentation in dsaupd\n\n";
   }
   else
   {
@@ -148,17 +148,17 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 
     if (ierr!=0)
     {
-      cout << "Error with zneupd, info = " << ierr << "\n";
-      cout << "Check the documentation of zneupd.\n\n";
+      cerr << "Error with zneupd, info = " << ierr << "\n";
+      cerr << "Check the documentation of zneupd.\n\n";
     }
     else if (info==1)
     {
-      cout << "Maximum number of iterations reached.\n\n";
+      cerr << "Maximum number of iterations reached.\n\n";
     }
     else if (info==3)
     {
-      cout << "No shifts could be applied during implicit\n";
-      cout << "Arnoldi update, try increasing NCV.\n\n";
+      cerr << "No shifts could be applied during implicit\n";
+      cerr << "Arnoldi update, try increasing NCV.\n\n";
     }
 
     /* Before exiting, we copy the solution information over to the arrays of
@@ -180,7 +180,7 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
       }
     
     for(int i=0;i<nev;i++) if(abs(d[i].imag())>1e-6)
-      cout << "Error in znaupd: eigenvalues not real. " << d[i] << endl;
+      cerr << "Error in znaupd: eigenvalues not real. " << d[i] << endl;
     for (int i=0; i<nev; i++) Evals[i] = d[i].real();
     for (int i=0; i<n; i++) Evecs[i] = v[i];
 

@@ -54,6 +54,16 @@ qtensor<double> H_spinless_fermion_ledge(double t=1., double p=1., double u=1.);
 qtensor<double> H_spinless_fermion_redge(double t=1., double p=1., double u=1.);
 
 // ******************************************************************
+// 2-Potts model / Ising model: (with symmetry)
+//  J Sz_{i} Sz_{i+1} + H Sx{i} 
+
+qtensor<double> H_2Potts(double j, double h);
+
+qtensor<double> H_2Potts_ledge(double j, double h);
+
+qtensor<double> H_2Potts_redge(double j, double h);
+
+// ******************************************************************
 // Three state Potts model (same as the paper):
 //   p=0, t=0: three state Potts model
 // - fe^{-ip} T^d_{j} - Je^{-it} S^d_{j} S_{j+1}

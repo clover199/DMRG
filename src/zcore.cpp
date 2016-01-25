@@ -81,7 +81,7 @@ void check_hermitian_complex(int n)
 }
 
 
-void print_energy(int l ,int r, double* val, int n=NEV)
+void print_energy_complex(int l ,int r, double* val, int n=NEV)
 {
   cout << "Energy:\n";
   for(int i=0;i<n;i++) cout << "  " << val[i] << endl;
@@ -96,7 +96,7 @@ void print_energy(int l ,int r, double* val, int n=NEV)
 }
 
 
-void print_singular(int l, int r, const vector<double>& s)
+void print_singular_complex(int l, int r, const vector<double>& s)
 {
   cout << "Singular value:\n";
   for(int i=0;i<s.size();i++) cout << "  " << s[i] << endl;
@@ -125,9 +125,9 @@ void two_sites(int size, int cutoff,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, lenv, 1, renv, 1);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*2];
+  double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
-  if(d<NEV*2)
+  if(d<NEV*10)
   {
     qtensor< complex<double> > whole;
     whole.contract(lenv, 1, renv, 1);
@@ -136,7 +136,7 @@ void two_sites(int size, int cutoff,
     whole = whole.combine(0,1);
     whole = whole.simplify();
     whole.eig(val, vecs, symmetry_sector);
-    print_energy(l, r, val, d);
+    print_energy_complex(l, r, val, d);
   }
   else
   {
@@ -147,9 +147,9 @@ void two_sites(int size, int cutoff,
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
 //    check_hermitian_complex(d);
-    znaupd(d, NEV, val, vecs, av2);
+    znaupd(d, 1, val, vecs, av2);
     delete store;
-    print_energy(l, r, val);
+    print_energy_complex(l, r, val);
   }
 
   qtensor< complex<double> > vec(vecs, dim, sym);
@@ -157,16 +157,19 @@ void two_sites(int size, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(l, r, s);
+  print_singular_complex(l, r, s);
 
   my_mps[l] = U;
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N');
+  U.conjugate();
   my_mps(l).contract(U, vec, 'T', 'N');
   vec.contract(renv, V, 'N', 'T');
+  V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N');
 }
+
 
 void update_two(int l, int r, int cutoff,
                 mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
@@ -180,9 +183,9 @@ void update_two(int l, int r, int cutoff,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, lenv, 2, renv, 2);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*2];
+  double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
-  if(false)
+  if(d<NEV*10)
   {  // check energy using ED
     qtensor< complex<double> > whole, tlenv, trenv;
     tlenv = lenv.combine(3,4);
@@ -194,43 +197,116 @@ void update_two(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    val = new double [d];
     whole.eig(val, vecs, symmetry_sector);
-    print_energy(l, r, val, NEV);
+    print_energy_complex(l, r, val, d);
   }
-  r_num = 2;
-  l_num = 3;
-  renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
-  lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
-  int d_store = get_dimension(dim_ret, sym_ret);
-  store = new complex<double> [d_store];
-//  check_hermitian_complex(d);
-  znaupd(d, NEV, val, vecs, av2);
-  delete store;
-  print_energy(l, r, val);
+  else
+  {
+    r_num = 2;
+    l_num = 3;
+    renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
+    int d_store = get_dimension(dim_ret, sym_ret);
+    store = new complex<double> [d_store];
+  //  check_hermitian_complex(d);
+    znaupd(d, NEV, val, vecs, av2);
+    delete store;
+    print_energy_complex(l, r, val);
+  }
 
   qtensor< complex<double> > vec(vecs, dim, sym);
   qtensor< complex<double> > U, V;
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(l, r, s);
+  print_singular_complex(l, r, s);
 
   my_mps[l] = U;
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
+  U.conjugate();
   my_mps(l).contract(U, vec, 'T', 'N', 2);
   vec.contract(renv, V, 'N', 'T', 2);
+  V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
+}
 
-  lenv = my_mps(l-1);
-//  renv = my_mps(r+1);
-  if(true)
+
+void move2right(int l, int r, int cutoff,
+                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+{
+  lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
+  lenv = lenv.exchange(3,4);
+  renv = my_mps(r);
+  
+  vector< vector<int> > dim, sym, dim_ret, sym_ret;
+  generate_dim_sym(dim, sym, lenv, 2, renv, 1);
+  int d = get_dimension(dim, sym);
+  double *val = new double [NEV*10];
+  complex<double> *vecs = new complex<double> [d];
+  if(d<NEV*10)
   {  // check energy using ED
-    qtensor< complex<double> > whole, tlenv, trenv;
-//    tlenv = lenv.combine(3,4);
-//    tlenv = tlenv.combine(0,1);
+    qtensor< complex<double> > whole, tlenv;
+    tlenv = lenv.combine(3,4);
+    tlenv = tlenv.combine(0,1);
+    whole.contract(tlenv, 1, renv, 1);
+    whole = whole.simplify();
+    whole = whole.exchange(2,3);
+    whole = whole.combine(2,3);
+    whole = whole.combine(0,1);
+    whole.eig(val, vecs, symmetry_sector);
+    print_energy_complex(l, l, val, d);
+  }
+  else
+  {
+    r_num = 1;
+    l_num = 3;
+    renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
+    int d_store = get_dimension(dim_ret, sym_ret);
+    store = new complex<double> [d_store];
+  //  check_hermitian_complex(d);
+    znaupd(d, NEV, val, vecs, av2);
+    delete store;
+    print_energy_complex(l, l, val);
+  }
+
+  qtensor< complex<double> > vec(vecs, dim, sym);
+  qtensor< complex<double> > U, V;
+  qtensor<double> S;
+  vector<double> s;
+  s = vec.svd(U, S, V, 2, cutoff);
+  print_singular_complex(l, l, s);
+
+  my_mps[l] = U;
+  my_mps.center() = S;
+//  my_mps[r] = V;
+  vec.contract(lenv, U, 'N', 'N', 2);
+  U.conjugate();
+  my_mps(l).contract(U, vec, 'T', 'N', 2);
+//  vec.contract(renv, V, 'N', 'T');
+//  V.conjugate();
+//  my_mps(r).contract(V, vec, 'N', 'N');
+}
+
+
+void move2left(int l, int r, int cutoff,
+               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+{
+  lenv = my_mps(l);
+  qtensor< complex<double> > ope = my_mpo[r].exchange(0,2);
+  renv.contract(my_mps(r+1), 1, ope, 0);
+  renv = renv.exchange(0,1);
+  
+  vector< vector<int> > dim, sym, dim_ret, sym_ret;
+  generate_dim_sym(dim, sym, lenv, 1, renv, 2);
+  int d = get_dimension(dim, sym);
+  double *val = new double [NEV*10];
+  complex<double> *vecs = new complex<double> [d];
+  if(d<NEV*10)
+  {  // check energy using ED
+    qtensor< complex<double> > whole, trenv;
     trenv = renv.combine(3,4);
     trenv = trenv.combine(0,1);
     whole.contract(lenv, 1, trenv, 1);
@@ -238,118 +314,39 @@ void update_two(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    whole.print_matrix();
+    val = new double [d];
+    whole.eig(val, vecs, symmetry_sector);
+    print_energy_complex(r, r, val, d);
   }
-  generate_dim_sym(dim, sym, lenv, 1, renv, 2);
-  d = get_dimension(dim, sym);
-  val = new double [NEV*2];
-  vecs = new complex<double> [d];
-  r_num = 2;
-  l_num = 2;
-  renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
-  lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
-  d_store = get_dimension(dim_ret, sym_ret);
-  store = new complex<double> [d_store];
-  check_hermitian_complex(d);
-  znaupd(d, NEV, val, vecs, av2);
-  delete store;
-  print_energy(l, r, val, NEV);
-}
-
-
-void move2right(int l, int cutoff,
-                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
-{
-  int d = 1;
-  d *= my_mps(l-1).dimension(2);  // left environment
-  d *= my_mpo[l].dimension(3);  // the left point
-  d *= my_mps(l+1).dimension(2);  // right environment
-
-  lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
-  lenv = lenv.exchange(3,4);
-  renv = my_mps(l+1);
-  
-  vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 2, renv, 1);
-  r_num = 1;
-  l_num = 3;
-  renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
-  lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0);
-
-  double *val = new double [NEV];
-  complex<double> *vecs = new complex<double> [d];
-  int d_store = 1;
-  for(int i=0;i<dim_ret.size();i++)
+  else
   {
-    int temp = 0;
-    for(int j=0;j<dim_ret[i].size();j++) temp += dim_ret[i][j];
-    d_store *= temp;
+    r_num = 2;
+    l_num = 2;
+    renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
+    int d_store = get_dimension(dim_ret, sym_ret);
+    store = new complex<double> [d_store];
+  //  check_hermitian_complex(d);
+    znaupd(d, NEV, val, vecs, av2);
+    delete store;
+    print_energy_complex(r, r, val);
   }
-  store = new complex<double> [d_store];
-//  check_hermitian_complex(d);
-  znaupd(d, NEV, val, vecs, av2);
-  delete store;
-  print_energy(l, l, val);
-
-  qtensor< complex<double> > vec(vecs, dim, sym);
-  qtensor< complex<double> > U, V;
-  qtensor<double> S;
-  vector<double> s;
-  s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(l, l, s);
-
-  my_mps[l] = U;
-  my_mps.center() = S;
-  vec.contract(lenv, U, 'N', 'N', 2);
-  my_mps(l).contract(U, vec, 'T', 'N', 2);
-}
-
-
-void move2left(int r, int cutoff,
-               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
-{
-  int d = 1;
-  d *= my_mps(r-1).dimension(2);  // left environment
-  d *= my_mpo[r].dimension(3);  // the right point
-  d *= my_mps(r+1).dimension(2);  // right environment
-
-  lenv = my_mps(r-1);
-  qtensor< complex<double> > ope = my_mpo[r].exchange(0,2);
-  renv.contract(my_mps(r+1), 1, ope, 0);
-  renv = renv.exchange(0,1);
-  
-  vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 1, renv, 2);
-  r_num = 2;
-  l_num = 2;
-  renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
-  lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0);
-
-  double *val = new double [NEV];
-  complex<double> *vecs = new complex<double> [d];
-  int d_store = 1;
-  for(int i=0;i<dim_ret.size();i++)
-  {
-    int temp = 0;
-    for(int j=0;j<dim_ret[i].size();j++) temp += dim_ret[i][j];
-    d_store *= temp;
-  }
-  store = new complex<double> [d_store];
-//  check_hermitian_complex(d);
-  znaupd(d, NEV, val, vecs, av2);
-  delete store;
-  print_energy(r, r, val);
 
   qtensor< complex<double> > vec(vecs, dim, sym);
   qtensor< complex<double> > U, V;
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(r, r, s);
+  print_singular_complex(r, r, s);
 
+//  my_mps[l] = U;
   my_mps.center() = S;
   my_mps[r] = V;
+//  vec.contract(lenv, U, 'N', 'N');
+//  U.conjugate();
+//  my_mps(l).contract(U, vec, 'T', 'N');
   vec.contract(renv, V, 'N', 'T', 2);
+  V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
 }
 
@@ -370,20 +367,21 @@ void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
   print = false;
   cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
   two_sites(L, pre_cutoff, my_mps, my_mpo);
+
   for(int i=1;i<L/2;i++)
   {
     cout << "********** starting l=" << i << " r=" << L-1-i << " **********\n";
     update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo);
   }
-  if(0)for(int i=L/2;i<L-1;i++)
+  for(int i=L/2;i<L-1;i++)
   {
     cout << "********** starting l=" << i << " r=" << i+1 << " **********\n";
-    move2right(i, pre_cutoff, my_mps, my_mpo);
+    move2right(i, i+1, pre_cutoff, my_mps, my_mpo);
   }
-  if(0)for(int i=L-2;i>0;i--)
+  for(int i=L-2;i>0;i--)
   {
     cout << "********** sweep l=" << i << " r=" << i+1 << " **********\n";
-    move2left(i, pre_cutoff, my_mps, my_mpo);
+    move2left(i-1, i, pre_cutoff, my_mps, my_mpo);
   }
   data_energy.close();
   data_singular.close();

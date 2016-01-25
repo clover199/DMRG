@@ -1,10 +1,13 @@
+/* This is the main function for the 3-Potts model
+
+Make sure only SYMMETRY is defined as 3
+
+*/
+
 
 #include "global.h"
 #include "functions.h"
 #include "operators.h"
-
-#define FERMION
-//#define SYMMETRY 3
 
 extern string filename = "";
 extern bool print = false;

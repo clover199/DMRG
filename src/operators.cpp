@@ -251,6 +251,81 @@ qtensor<double> H_spinless_fermion_redge(double t, double p, double u)
 }
 
 // ******************************************************************
+// 2-Potts model / Ising model: (with symmetry)
+//  J Sx_{i} Sx_{i+1} + H Sz{i} 
+//
+//  MPO: I     0     0      Sz: 1  0     Sx: 0 1
+//       Sx    0     0          0 -1         1 0
+//      H*Sz  J*Sx   I
+
+qtensor<double> H_2Potts(double j, double h)
+{
+  tensor<double> l00(3,1,3,1);  // I Sz
+  l00.update( 1, 0,0,0,0);
+  l00.update( h, 2,0,0,0);
+  l00.update( 1, 2,0,2,0);
+  tensor<double> l11(3,1,3,1);
+  l11.update( 1, 0,0,0,0);
+  l11.update(-h, 2,0,0,0);
+  l11.update( 1, 2,0,2,0);
+  tensor<double> l01(3,1,3,1);  // Sx
+  l01.update( 1, 1,0,0,0);
+  l01.update( j, 2,0,1,0);
+  tensor<double> l10(3,1,3,1);
+  l10.update( 1, 1,0,0,0);
+  l10.update( j, 2,0,1,0);
+
+  qtensor<double> ret(1,2,1,2);
+  ret.update(l00, 0,0,0,0);
+  ret.update(l01, 0,0,0,1);
+  ret.update(l10, 0,1,0,0);
+  ret.update(l11, 0,1,0,1);
+  return ret;
+}
+
+qtensor<double> H_2Potts_ledge(double j, double h)
+{
+  tensor<double> l00(1,3,1);  // I Sz
+  l00.update( h, 0,0,0);
+  l00.update( 1, 0,2,0);
+  tensor<double> l11(1,3,1);
+  l11.update(-h, 0,0,0);
+  l11.update( 1, 0,2,0);
+  tensor<double> l01(1,3,1);  // Sx
+  l01.update( j, 0,1,0);
+  tensor<double> l10(1,3,1);
+  l10.update( j, 0,1,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(l00, 0,0,0);
+  ret.update(l01, 0,0,1);
+  ret.update(l10, 1,0,0);
+  ret.update(l11, 1,0,1);
+  return ret;
+}
+
+qtensor<double> H_2Potts_redge(double j, double h)
+{
+  tensor<double> l00(1,3,1);  // I Sz
+  l00.update( 1, 0,0,0);
+  l00.update( h, 0,2,0);
+  tensor<double> l11(1,3,1);
+  l11.update( 1, 0,0,0);
+  l11.update(-h, 0,2,0);
+  tensor<double> l01(1,3,1);  // Sx
+  l01.update( 1, 0,1,0);
+  tensor<double> l10(1,3,1);
+  l10.update( 1, 0,1,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(l00, 0,0,0);
+  ret.update(l01, 0,0,1);
+  ret.update(l10, 1,0,0);
+  ret.update(l11, 1,0,1);
+  return ret;
+}
+
+// ******************************************************************
 // Three state Potts model (same as the paper):
 // -fe^{ip} T_{j} - fe^{-ip} T^d_{j} - Je^{it} S_{j} S^d_{j+1} - Je^{-it} S^d_{j} S_{j+1}
 //

@@ -5,7 +5,7 @@ MY_SRC = "./src"
 
 all: 
 	$(MAKE) -C $(MY_SRC) all
-	g++ -g kitaev.cpp -I ./include \
+	g++ -g test.cpp -I ./include/ -I ./\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \
@@ -23,9 +23,9 @@ all:
 		$(MY_SRC)/zcore.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
-test: 
+%: %.cpp
 	$(MAKE) -C $(MY_SRC) all
-	g++ test.cpp -I ./include \
+	g++ $< -I ./include/ -I./ -o $@.out\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \
@@ -44,6 +44,9 @@ test:
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:
-	rm -rf *.o *.txt output* energy* singular*
+	rm -rf *.o *.txt
 	$(MAKE) -C ./src clean
 	
+fullclean:
+	rm -rf *.o *.txt *.out
+	$(MAKE) -C ./src clean

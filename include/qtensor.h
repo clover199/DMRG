@@ -16,7 +16,6 @@ class qtensor
   template <typename> friend class qtensor;
 
 private:
-  vector<int> index_;  // the symmetry sector numbers for all indexes
   vector< vector<int> > dim_;  // the dimension for different sectors
                                // dim_[i][j] is the dimension for index i, symmetry j
   vector< vector<int> > sym_;  // symmetries are represented by 0,1,2...
@@ -37,12 +36,14 @@ public:
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
   
-  int index(int n) const {return index_[n];}
+  vector< vector<int> > dimension_all() const {return dim_;}
+
+  int index(int n) const {return dim_[n].size();}
   
-  int index() const {return index_.size();}
+  int index() const {return dim_.size();}
   
   int dimension(int n, int m) const {return dim_[n][m];}
-
+  
   int dimension(int n) const {
     int ret = 0;
     for(int i=0;i<dim_[n].size();i++) ret += dim_[n][i];
@@ -51,16 +52,17 @@ public:
   
   int dimension() const {
     int ret = 1;
-    for(int i=0;i<index_.size();i++) ret *= dimension(i);
+    for(int i=0;i<dim_.size();i++) ret *= dimension(i);
     return ret;
   }
 
-  void val(T* out, vector< vector<int> >& dim, vector< vector<int> >& sym) const {
+  int val(T* out, vector< vector<int> >& dim, vector< vector<int> >& sym) const {
     int k = 0;
     for(int i=0;i<val_.size();i++) for(int j=0;j<val_[i].val_.size();j++)
        out[k++] = val_[i].val_[j];
     dim = dim_;
     sym = sym_;
+    return k;
   }
   
   bool empty() const {
@@ -72,14 +74,11 @@ public:
   
   // all=false: print only non-zero values
   // all=true:  print all values including zeros
-  void print_all(bool all=false) const {
-    print();
-    for(int i=0;i<val_.size();i++) val_[i].print(all);
-  }
+  void print_all(bool all=false) const;
 
   void print_matrix() const;
 
-  qtensor conjugate() const;
+  qtensor conjugate();
 
   // remove the all-zero symmetry sectors
   qtensor simplify() const;
@@ -148,7 +147,7 @@ public:
   vector<double> svd(qtensor& U, qtensor<double>& S, qtensor& V,
                      int num=1, int cutoff=0);
 
-  // 
+  // calculate the eigenvalues and the eigenvector for the lowest eig-val
   int eig(double* val, T* vec, int sector=-1);
 };
 #endif

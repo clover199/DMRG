@@ -412,7 +412,7 @@ tensor<T>& tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
 
 template <typename T>
 tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
-                               bool cover)
+                               bool cover, double sign)
 {
   if(A.index_[a]!=B.index_[b])
   {
@@ -452,7 +452,7 @@ tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
   for(int i1=0;i1<al;i1++) for(int j1=0;j1<bl;j1++)
   for(int i2=0;i2<ar;i2++) for(int j2=0;j2<br;j2++)
     val_[i1*bl*br*ar+j1*br*ar+j2*ar+i2] += 
-        A.val_[i1*mid*ar+k*ar+i2] * B.val_[j1*mid*br+k*br+j2];
+        A.val_[i1*mid*ar+k*ar+i2] * B.val_[j1*mid*br+k*br+j2] * sign;
   return *this;
 }
 

@@ -42,7 +42,7 @@ bool split(string & str, string sep_char, string & str_bef, string & str_aft)
 
 
 vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, int& sweep,
-                            int& sector, vector<string>& para_name)
+                            int& sector, vector<string>& para_name, string& filename)
 {
   vector<double> ret(para_name.size(),1);
   string str_bef, str_aft;
@@ -63,7 +63,8 @@ vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, i
   }
   
   cout << "\n ***** The parameters for this running ***** \n\n"
-          "  sites(l) = " << sites << "\t cutoff(m) = " << cutoff << "\t sweep(n) = " << sweep << endl;
+          "  sites(l) = " << sites << "\t cutoff(m) = " << cutoff
+       << "\t sweep(n) = " << sweep << "\t symmetry_section(s) = " << sector << endl;
   for(int i=0;i<ret.size();i++) cout << "\t " << para_name[i] << " = " << ret[i] << endl;
   cout << endl;
   

@@ -2,9 +2,9 @@
 #include "qtensor.h"
 
 #ifdef SYMMETRY
-  int add(int a, int b) {return (a+b)%SYMMETRY;}
+  int add(int a, int b) {return (a+b+SYMMETRY)%SYMMETRY;}
 #elif defined FERMION
-  int add(int a, int b) {return (a+b)%2;}
+  int add(int a, int b) {return (a+b+2)%2;}
 #else
   int add(int a, int b) {return a+b;}
 #endif
@@ -54,7 +54,8 @@ void generate_map(vector< vector<int> >& map, const vector<int>& index)
 }
 
 
-int get_dimension(const vector< vector<int> >& dim, const vector< vector<int> >& sym)
+int get_dimension(const vector< vector<int> >& dim,
+                  const vector< vector<int> >& sym)
 {
   int d = 0;
   for(int i=0;i<sym.size();i++) 
@@ -70,32 +71,40 @@ int get_dimension(const vector< vector<int> >& dim, const vector< vector<int> >&
 template <typename T>
 void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
                       const qtensor<T>& lenv, int lnum,
-                      const qtensor<T>& renv, int rnum)
+                      const qtensor<T>& renv, int rnum,
+                      int sector)
 {
+  vector< vector<int> > ldim = lenv.dimension_all();
+  vector< vector<int> > rdim = renv.dimension_all();
   dim.resize(lnum+rnum);
-  for(int i=0;i<lnum;i++)
-  {
-    int temp = lenv.index()-lnum+i;
-    dim[i].resize(lenv.index(temp));
-    for(int j=0;j<dim[i].size();j++) dim[i][j] = lenv.dimension(temp,j);
-  }
-  for(int i=0;i<rnum;i++)
-  {
-    int temp = renv.index()-rnum+i;
-    dim[lnum+i].resize(renv.index(temp));
-    for(int j=0;j<dim[lnum+i].size();j++) dim[lnum+i][j] = renv.dimension(temp,j);
-  }
+  for(int i=0;i<lnum;i++) dim[i] = ldim[ldim.size()-lnum+i];
+  for(int i=0;i<rnum;i++) dim[lnum+i] = rdim[rdim.size()-rnum+i];
 
-  vector<int> index(dim.size(), 0);  // used as index here
-  for(int i=0;i<dim.size();i++) index[i] = dim[i].size();
-  vector< vector<int> > sym_ret;
-  generate_map(sym_ret, index);
+  vector<int> index(lnum, 0);
+  for(int i=0;i<lnum;i++) index[i] = dim[i].size();
+  generate_map(ldim, index);  // generate the sym for the left part
+  index.resize(rnum, 0);
+  for(int i=0;i<rnum;i++) index[i] = dim[lnum+i].size();
+  generate_map(rdim, index);  // generate the sym for the right part
+
   sym.clear();
-  if(symmetry_sector!=-1) for(int i=0;i<sym_ret.size();i++)
+  index.resize(lnum+rnum);  // used to store the symmetry sector
+  if(sector!=-1) for(int s=0;s<SYMMETRY;s++)
   {
-    int sum = 0;
-    for(int j=0;j<dim.size();j++) sum = add(sum, sym_ret[i][j]);
-    if(sum==symmetry_sector) sym.push_back(sym_ret[i]);
+    int t = add(sector, -s);
+    for(int l=0;l<ldim.size();l++) for(int r=0;r<rdim.size();r++)
+    {
+      int lsym = 0;
+      for(int j=0;j<lnum;j++) lsym = add(lsym, ldim[l][j]);
+      int rsym = 0;
+      for(int j=0;j<rnum;j++) rsym = add(rsym, rdim[r][j]);
+      if(lsym==s and rsym==t)
+      {
+        for(int i=0;i<lnum;i++) index[i] = ldim[l][i];
+        for(int i=0;i<rnum;i++) index[lnum+i] = rdim[r][i];
+        sym.push_back(index);
+      }
+    }
   }
   else
   {
@@ -108,9 +117,11 @@ void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
 template void generate_dim_sym(vector< vector<int> >& dim,
                                vector< vector<int> >& sym,
                                const qtensor<double>& lenv, int lnum,
-                               const qtensor<double>& renv, int rnum);
+                               const qtensor<double>& renv, int rnum,
+                               int sector);
 template void generate_dim_sym(vector< vector<int> >& dim,
                                vector< vector<int> >& sym,
                                const qtensor<complex<double> >& lenv, int lnum,
-                               const qtensor<complex<double> >& renv, int rnum);
+                               const qtensor<complex<double> >& renv, int rnum,
+                               int sector);
 

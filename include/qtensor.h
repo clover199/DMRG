@@ -37,12 +37,6 @@ public:
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
   
   vector< vector<int> > dimension_all() const {return dim_;}
-
-  int index(int n) const {return dim_[n].size();}
-  
-  int index() const {return dim_.size();}
-  
-  int dimension(int n, int m) const {return dim_[n][m];}
   
   int dimension(int n) const {
     int ret = 0;

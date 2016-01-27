@@ -13,12 +13,13 @@ vector<string> set_para_name(string s1="", string s2="", string s3="", string s4
 
 // The function gets the parameters as the same order of the parameter names
 vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, int& sweep,
-                            int& sector, vector<string>& para_name);
+                            int& sector, vector<string>& para_name, string& filename);
 
 
-void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep);
+void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep,
+          int sector, const string& filename);
 
 void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
-          int cutoff, int sweep);
+          int cutoff, int sweep, int sector, const string& filename);
 
 #endif

@@ -78,6 +78,8 @@ void check_hermitian(int n)
       cout << endl;
     }
   }
+  delete in;
+  delete out;
 }
 
 
@@ -115,7 +117,8 @@ void print_singular(int l, int r, const vector<double>& s)
 
 
 void two_sites(int size, int cutoff,
-               mps<double>& my_mps, mpo<double>& my_mpo)
+               mps<double>& my_mps, mpo<double>& my_mpo,
+               int sector)
 {
   int l = 0;
   int r = size-1;
@@ -123,7 +126,7 @@ void two_sites(int size, int cutoff,
   renv = my_mpo[r];
 
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 1, renv, 1);
+  generate_dim_sym(dim, sym, lenv, 1, renv, 1, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   double *vecs = new double [d];
@@ -135,7 +138,7 @@ void two_sites(int size, int cutoff,
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
     whole = whole.simplify();
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy(l, r, val, d);
   }
   else
@@ -147,6 +150,7 @@ void two_sites(int size, int cutoff,
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
 //    check_hermitian(d);
+    cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, 1, val, vecs, av2);
     delete store;
     print_energy(l, r, val);
@@ -169,7 +173,8 @@ void two_sites(int size, int cutoff,
 
 
 void update_two(int l, int r, int cutoff,
-                mps<double>& my_mps, mpo<double>& my_mpo)
+                mps<double>& my_mps, mpo<double>& my_mpo,
+               int sector)
 {
   lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
   lenv = lenv.exchange(3,4);
@@ -178,7 +183,7 @@ void update_two(int l, int r, int cutoff,
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 2, renv, 2);
+  generate_dim_sym(dim, sym, lenv, 2, renv, 2, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   double *vecs = new double [d];
@@ -194,7 +199,7 @@ void update_two(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy(l, r, val, d);
   }
   else
@@ -205,7 +210,8 @@ void update_two(int l, int r, int cutoff,
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
-  //  check_hermitian(d);
+//    check_hermitian(d);
+    cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy(l, r, val);
@@ -229,14 +235,15 @@ void update_two(int l, int r, int cutoff,
 
 
 void move2right(int l, int r, int cutoff,
-                mps<double>& my_mps, mpo<double>& my_mpo)
+                mps<double>& my_mps, mpo<double>& my_mpo,
+               int sector)
 {
   lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
   lenv = lenv.exchange(3,4);
   renv = my_mps(r);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 2, renv, 1);
+  generate_dim_sym(dim, sym, lenv, 2, renv, 1, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   double *vecs = new double [d];
@@ -250,7 +257,7 @@ void move2right(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy(l, l, val, d);
   }
   else
@@ -262,6 +269,7 @@ void move2right(int l, int r, int cutoff,
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
   //  check_hermitian(d);
+    cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy(l, l, val);
@@ -285,7 +293,8 @@ void move2right(int l, int r, int cutoff,
 
 
 void move2left(int l, int r, int cutoff,
-               mps<double>& my_mps, mpo<double>& my_mpo)
+               mps<double>& my_mps, mpo<double>& my_mpo,
+               int sector)
 {
   lenv = my_mps(l);
   qtensor<double> ope = my_mpo[r].exchange(0,2);
@@ -293,7 +302,7 @@ void move2left(int l, int r, int cutoff,
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 1, renv, 2);
+  generate_dim_sym(dim, sym, lenv, 1, renv, 2, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   double *vecs = new double [d];
@@ -308,7 +317,7 @@ void move2left(int l, int r, int cutoff,
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
     val = new double [d];
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy(r, r, val, d);
   }
   else
@@ -319,7 +328,8 @@ void move2left(int l, int r, int cutoff,
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
-    check_hermitian(d);
+//    check_hermitian(d);
+    cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy(r, r, val);
@@ -343,7 +353,7 @@ void move2left(int l, int r, int cutoff,
 
 
 void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
-          int cutoff, int sweep)
+          int cutoff, int sweep, int sector, const string& filename)
 {
   int L = my_mps.size();
 
@@ -355,28 +365,27 @@ void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
   int pre_cutoff = 10;
   int pre_sweep = cutoff/50;
   
-  print = false;
   cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
-  two_sites(L, pre_cutoff, my_mps, my_mpo);
+  two_sites(L, pre_cutoff, my_mps, my_mpo, sector);
   for(int i=1;i<L/2;i++)
   {
-    cout << "********** starting l=" << i << " r=" << L-1-i << " **********\n";
-    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo);
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector);
   }
   for(int i=L/2;i<L-1;i++)
   {
-    cout << "********** starting l=" << i << " r=" << i+1 << " **********\n";
-    move2right(i, i+1, pre_cutoff, my_mps, my_mpo);
+    cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector);
   }
   for(int i=L-2;i>0;i--)
   {
-    cout << "********** sweep=1 l=" << i << " r=" << i+1 << " **********\n";
-    move2left(i-1, i, pre_cutoff, my_mps, my_mpo);
+    cout << "<<<<<<<<<< sweep=1 l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
+    move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
   }
   for(int i=1;i<L-1;i++)
   {
-    cout << "********** sweep=1 l=" << i << " r=" << i+1 << " **********\n";
-    move2right(i, i+1, pre_cutoff, my_mps, my_mpo);
+    cout << ">>>>>>>>>> sweep=1 l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
   }
   data_energy.close();
   data_singular.close();

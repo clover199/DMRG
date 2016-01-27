@@ -16,6 +16,7 @@ void qtensor<T>::check_dim_(int n)
   }
 }
 
+
 template <typename T>
 qtensor<T>::qtensor(int i0, int i1, int i2, int i3,
                     int i4, int i5, int i6, int i7)
@@ -583,7 +584,8 @@ qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
         map.push_back(loc);
         sym_.push_back(sym);
         val_.resize(sym_.size());
-        val_[val_.size()-1].contract(A.val_[i], B.val_[j], transa, transb, num, true);
+        val_[val_.size()-1].contract(A.val_[i], B.val_[j],
+                                     transa, transb, num, true);
       }
     }
   }
@@ -611,7 +613,8 @@ qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
   for(int i=0;i<a;i++) dim_[i] = A.dim_[i];
   for(int i=a;i<a+b;i++) dim_[i] = B.dim_[i-a];
   for(int i=a+b;i<a+B.dim_.size()-1;i++) dim_[i] = B.dim_[i-a+1];
-  for(int i=a+B.dim_.size()-1;i<dim_.size();i++) dim_[i] = A.dim_[i-B.dim_.size()+2];
+  for(int i=a+B.dim_.size()-1;i<dim_.size();i++)
+    dim_[i] = A.dim_[i-B.dim_.size()+2];
 
   sym_.clear();
   val_.clear();
@@ -624,14 +627,19 @@ qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
     for(int i=0;i<a;i++) sym[i] = A.sym_[l][i];
     for(int i=a;i<a+b;i++) sym[i] = B.sym_[r][i-a];
     for(int i=a+b;i<a+B.dim_.size()-1;i++) sym[i] = B.sym_[r][i-a+1];
-    for(int i=a+B.dim_.size()-1;i<dim_.size();i++) sym[i] = A.sym_[l][i-B.dim_.size()+2];
+    for(int i=a+B.dim_.size()-1;i<dim_.size();i++)
+      sym[i] = A.sym_[l][i-B.dim_.size()+2];
 
+    int sign = 1;
+#ifdef FERMION
+    sign = -1;
+#endif
     int loc = 0;
     for(int s=0;s<sym.size();s++) loc = loc*dim_[s].size()+sym[s];
     bool same = false;
     for(int t=0;t<map.size();t++) if(loc==map[t])
     {
-      val_[t].contract(A.val_[l], a, B.val_[r], b);
+      val_[t].contract(A.val_[l], a, B.val_[r], b, false, sign);
       same = true;
     }
     if(not same)
@@ -639,7 +647,7 @@ qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
       map.push_back(loc);
       sym_.push_back(sym);
       val_.resize(sym_.size());
-      val_[val_.size()-1].contract(A.val_[l], a, B.val_[r], b, true);
+      val_[val_.size()-1].contract(A.val_[l], a, B.val_[r], b, true, sign);
     }
   }
   for(int i=0;i<val_.size();i++) check_dim_(i);
@@ -664,7 +672,8 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
                          vector< vector<int> >& sym_ret,
                          const vector< vector<int> >& dim,
                          const vector< vector<int> >& sym,
-                         char transa, char transb, int num, double beta, bool back) const
+                         char transa, char transb,
+                         int num, double beta, bool back) const
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = dim_.size()-num;
@@ -715,11 +724,11 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
     for(int i=0;i<map.size();i++) for(int j=0;j<dim_ret.size();j++)
       map[i] = map[i]*dim_ret[j].size() + sym_ret[i][j];
     map_dim = vector<int> (sym_ret.size(), 0);
-    for(int i=1;i<map_dim.size();i++)
+    for(int i=0;i<map_dim.size()-1;i++)
     {
       int d = 1;
       for(int j=0;j<dim_ret.size();j++) d *= dim_ret[j][sym_ret[i][j]];
-      map_dim[i] = map_dim[i-1] + d;
+      map_dim[i+1] = map_dim[i] + d;
     }
   }
   vector<bool> first(map.size(), true);  // used when back=true
@@ -919,19 +928,17 @@ int qtensor<T>::eig(double* val, T* vec, int sector)
             "This is a " << dim_.size() << "-tensor.";
     return 0;
   }
-  if(dim_[0].size()!=dim_[1].size())
+  if(dim_[0]!=dim_[1])
   {
-    cerr << "Error in tensor_quantum eig: the symmetries are not the same.\n"
-         << dim_[0].size() << "!=" << dim_[1].size() << endl;
+    cerr << "Error in tensor_quantum eig: the dimensions are not the same.\n"
+            "index 0: ";
+    for(int i=0;i<dim_[0].size();i++) cerr << dim_[0][i] << " ";
+    cerr << endl << "index 1: ";
+    for(int i=0;i<dim_[1].size();i++) cerr << dim_[1][i] << " ";
+    cerr << endl;
     return 0;
   }
-  for(int i=0;i<dim_[0].size();i++) if(dim_[0][i]!=dim_[1][i])
-  {
-    cerr << "Error in tensor_quantum eig: the symmetry sector " << i
-         << " is not square.\n"
-         << dim_[i][0] << "!=" << dim_[i][1] << endl;
-    return 0;
-  }
+
   bool check = false;
   for(int i=0;i<val_.size();i++) if(sym_[i][0]!=sym_[i][1])
   {

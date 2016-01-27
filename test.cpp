@@ -2,57 +2,35 @@
 #include "global.h"
 #include "functions.h"
 #include "operators.h"
-#include "useful.h"
 
-extern string filename = "";
-extern bool print = false;
-extern int symmetry_sector = 0;
-
-int main()
+int main(int argc, char *argv[])
 {
-  std::srand(std::time(0));
- 
-  qtensor<double> A(2,2,2);
-  tensor<double> A0(2,2,2);
-  A0.rand();
-  A.update(A0, 0,0,0);
-  A0.rand();
-  A.update(A0, 0,0,1);
-  A0.rand();
-  A.update(A0, 1,1,0);
-  A0.rand();
-  A.update(A0, 1,0,1);
-//  cout << "\ntensor A:\n"; A.print_matrix(); cout << endl;
+  time_t start, end;
+  time(&start);
+  
+  // ********** initialize the system **********
 
-  qtensor<double> B(2,2,2);
-  A0.rand();
-  B.update(A0, 0,0,1);
-  A0.rand();
-  B.update(A0, 0,1,0);
-  A0.rand();
-  B.update(A0, 1,0,0);
-  A0.rand();
-  B.update(A0, 1,0,1);
+  vector<string> para_name; // name of the parameters
+  para_name = set_para_name("j","h");
 
-  char transa = 'T';
-  char transb = 'N';
-  int num = 2;
-  qtensor<double> D;
-  D.contract(A, B, transa, transb, num);
-//  cout << "\ntensor D:\n"; D.print_matrix(); cout << endl;
+  int sites = 6;
+  int cutoff = 10;
+  int sweep = -1; 
+  int symmetry_sector = 0;
+  
+  vector<double> para( para_name.size(), 1.0 );
+  string filename = "";
+  para = set_para_val(argc, argv, sites, cutoff, sweep, symmetry_sector,
+                      para_name, filename);
 
-  double *in = new double [B.dimension()];
-  double *out = new double [D.dimension()];
-  vector< vector<int> > dim;
-  vector< vector<int> > sym;
-  int d = B.val(in, dim, sym);
-  vector< vector<int> > dim_ret;
-  vector< vector<int> > sym_ret;
-  vector< vector<int> > map;
-  A.get_map(map, dim_ret, sym_ret, dim, sym, transa, transb, num, 0, 0);
-  A.contract(out, in, map, transa, transb, num);
-  qtensor<double> E(out, dim_ret, sym_ret);
-//  cout << "\ntensor E:\n"; E.print_matrix();
-  A.plus(D,E,-1);
-  A.print_all();
+  mpo<double> my_mpo(sites, H_2Potts(para[0], para[1]));
+  my_mpo.edge(H_2Potts_ledge(para[0], para[1]),
+              H_2Potts_redge(para[0], para[1]));
+  mps<double> my_mps(my_mpo);
+
+  cout.precision(10);
+  dmrg(my_mps, my_mpo, cutoff, sweep, symmetry_sector, filename);
+  
+  time(&end);
+  cout << "Time used: " << difftime(end,start) << endl;
 }

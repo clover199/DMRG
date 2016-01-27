@@ -25,7 +25,7 @@ all:
 
 %: %.cpp
 	$(MAKE) -C $(MY_SRC) all
-	g++ $< -I ./include/ -I./ -o $@.out\
+	g++ -g $< -I ./include/ -I./ -o $@.out\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \

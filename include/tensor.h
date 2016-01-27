@@ -111,7 +111,8 @@ public:
   // A0 A1 A2 ... Aa-1 B0 B1 ... Bm Aa+1 ... An
   // if cover = false, the result tensor will be added to the original one
   // if cover = true, the original tensor will be destroyed.
-  tensor& contract(const tensor& A, int a, const tensor& B, int b, bool cover=false);
+  tensor& contract(const tensor& A, int a, const tensor& B, int b,
+                   bool cover=false, double sign = 1);
   
   // multiply the tensor by an array (as a matrix)
   // only multiply the 'num' left/right most index

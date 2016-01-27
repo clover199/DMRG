@@ -54,7 +54,7 @@ void check_hermitian_complex(int n)
       for(int s=0;s<n;s++) in[s] = 0;
       in[i] = 1;
       av2(n, in, out);
-      if(abs(temp-out[j])>TOL)
+      if(abs(temp-conj(out[j]))>TOL)
         cout << "Not hermitian! " << i << " " << j << " " 
              << temp << " " << out[j] << endl;
       ;
@@ -78,6 +78,8 @@ void check_hermitian_complex(int n)
       cout << endl;
     }
   }
+  delete in;
+  delete out;
 }
 
 
@@ -114,16 +116,15 @@ void print_singular_complex(int l, int r, const vector<double>& s)
 }
 
 
-void two_sites(int size, int cutoff,
-               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+void two_sites(int l, int r, int cutoff,
+               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+               int sector)
 {
-  int l = 0;
-  int r = size-1;
   lenv = my_mpo[l];
   renv = my_mpo[r];
 
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 1, renv, 1);
+  generate_dim_sym(dim, sym, lenv, 1, renv, 1, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
@@ -135,7 +136,7 @@ void two_sites(int size, int cutoff,
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
     whole = whole.simplify();
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy_complex(l, r, val, d);
   }
   else
@@ -147,6 +148,7 @@ void two_sites(int size, int cutoff,
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
 //    check_hermitian_complex(d);
+    cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, 1, val, vecs, av2);
     delete store;
     print_energy_complex(l, r, val);
@@ -163,8 +165,7 @@ void two_sites(int size, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N');
-  U.conjugate();
-  my_mps(l).contract(U, vec, 'T', 'N');
+  my_mps(l).contract(U, vec, 'C', 'N');
   vec.contract(renv, V, 'N', 'T');
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N');
@@ -172,7 +173,8 @@ void two_sites(int size, int cutoff,
 
 
 void update_two(int l, int r, int cutoff,
-                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+               int sector)
 {
   lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
   lenv = lenv.exchange(3,4);
@@ -181,7 +183,7 @@ void update_two(int l, int r, int cutoff,
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 2, renv, 2);
+  generate_dim_sym(dim, sym, lenv, 2, renv, 2, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
@@ -197,7 +199,7 @@ void update_two(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy_complex(l, r, val, d);
   }
   else
@@ -208,7 +210,8 @@ void update_two(int l, int r, int cutoff,
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
-  //  check_hermitian_complex(d);
+//    check_hermitian_complex(d);
+    cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy_complex(l, r, val);
@@ -225,8 +228,7 @@ void update_two(int l, int r, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
-  U.conjugate();
-  my_mps(l).contract(U, vec, 'T', 'N', 2);
+  my_mps(l).contract(U, vec, 'C', 'N', 2);
   vec.contract(renv, V, 'N', 'T', 2);
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
@@ -234,14 +236,15 @@ void update_two(int l, int r, int cutoff,
 
 
 void move2right(int l, int r, int cutoff,
-                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+                mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+               int sector)
 {
   lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
   lenv = lenv.exchange(3,4);
   renv = my_mps(r);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 2, renv, 1);
+  generate_dim_sym(dim, sym, lenv, 2, renv, 1, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
@@ -255,7 +258,7 @@ void move2right(int l, int r, int cutoff,
     whole = whole.exchange(2,3);
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy_complex(l, l, val, d);
   }
   else
@@ -266,7 +269,8 @@ void move2right(int l, int r, int cutoff,
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
-  //  check_hermitian_complex(d);
+ //   check_hermitian_complex(d);
+    cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy_complex(l, l, val);
@@ -283,8 +287,7 @@ void move2right(int l, int r, int cutoff,
   my_mps.center() = S;
 //  my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
-  U.conjugate();
-  my_mps(l).contract(U, vec, 'T', 'N', 2);
+  my_mps(l).contract(U, vec, 'C', 'N', 2);
 //  vec.contract(renv, V, 'N', 'T');
 //  V.conjugate();
 //  my_mps(r).contract(V, vec, 'N', 'N');
@@ -292,7 +295,8 @@ void move2right(int l, int r, int cutoff,
 
 
 void move2left(int l, int r, int cutoff,
-               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo)
+               mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+               int sector)
 {
   lenv = my_mps(l);
   qtensor< complex<double> > ope = my_mpo[r].exchange(0,2);
@@ -300,7 +304,7 @@ void move2left(int l, int r, int cutoff,
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
-  generate_dim_sym(dim, sym, lenv, 1, renv, 2);
+  generate_dim_sym(dim, sym, lenv, 1, renv, 2, sector);
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   complex<double> *vecs = new complex<double> [d];
@@ -315,7 +319,7 @@ void move2left(int l, int r, int cutoff,
     whole = whole.combine(2,3);
     whole = whole.combine(0,1);
     val = new double [d];
-    whole.eig(val, vecs, symmetry_sector);
+    whole.eig(val, vecs, sector);
     print_energy_complex(r, r, val, d);
   }
   else
@@ -327,6 +331,7 @@ void move2left(int l, int r, int cutoff,
     int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
   //  check_hermitian_complex(d);
+    cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy_complex(r, r, val);
@@ -343,8 +348,7 @@ void move2left(int l, int r, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
 //  vec.contract(lenv, U, 'N', 'N');
-//  U.conjugate();
-//  my_mps(l).contract(U, vec, 'T', 'N');
+//  my_mps(l).contract(U, vec, 'C', 'N');
   vec.contract(renv, V, 'N', 'T', 2);
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
@@ -352,7 +356,7 @@ void move2left(int l, int r, int cutoff,
 
 
 void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
-          int cutoff, int sweep)
+          int cutoff, int sweep, int sector, const string& filename)
 {
   int L = my_mps.size();
 
@@ -364,24 +368,27 @@ void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
   int pre_cutoff = 10;
   int pre_sweep = cutoff/50;
   
-  print = false;
   cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
-  two_sites(L, pre_cutoff, my_mps, my_mpo);
-
+  two_sites(0, L-1, pre_cutoff, my_mps, my_mpo, sector);
   for(int i=1;i<L/2;i++)
   {
-    cout << "********** starting l=" << i << " r=" << L-1-i << " **********\n";
-    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo);
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector);
   }
   for(int i=L/2;i<L-1;i++)
   {
-    cout << "********** starting l=" << i << " r=" << i+1 << " **********\n";
-    move2right(i, i+1, pre_cutoff, my_mps, my_mpo);
+    cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector);
   }
   for(int i=L-2;i>0;i--)
   {
-    cout << "********** sweep l=" << i << " r=" << i+1 << " **********\n";
-    move2left(i-1, i, pre_cutoff, my_mps, my_mpo);
+    cout << "<<<<<<<<<< sweep=1 l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
+    move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
+  }
+  for(int i=1;i<L-1;i++)
+  {
+    cout << ">>>>>>>>>> sweep=1 l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
   }
   data_energy.close();
   data_singular.close();

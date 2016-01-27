@@ -19,6 +19,6 @@ int get_dimension(const vector< vector<int> >& dim,
 template <typename T>
 void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
                       const qtensor<T>& lenv, int lnum,
-                      const qtensor<T>& renv, int rnum);
+                      const qtensor<T>& renv, int rnum, int sector);
 
 #endif

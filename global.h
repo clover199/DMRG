@@ -29,8 +29,4 @@ using std::complex;
 using std::string;
 using std::abs;
 
-extern string filename;
-extern bool print;
-extern int symmetry_sector;
-
 #endif

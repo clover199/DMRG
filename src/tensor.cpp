@@ -459,7 +459,8 @@ tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
 
 template <typename T>
 void tensor<T>::contract(T* out, T* in, int row, int col,
-                         char transa, char transb, int num, double beta)
+                         char transa, char transb, int num,
+                         double beta, double alpha)
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = index_.size()-num;
@@ -475,7 +476,7 @@ void tensor<T>::contract(T* out, T* in, int row, int col,
     cerr << "Error in tensor contract: The indexes are not the same. "
          << val_.size()/m << "!=" << k << endl;
   }
-  zgemm(transa, transb, m, n, k, begin(), in, out, 1, beta);
+  zgemm(transa, transb, m, n, k, begin(), in, out, alpha, beta);
 }
 
 

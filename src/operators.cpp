@@ -170,7 +170,7 @@ qtensor<double> H_Ising_redge(double j, double h)
 //       U*n  T*c^d  P*c -P*c^d -T*c    I
 //
 // Where T is the hopping parameter and P is the pairing parameter
-
+#ifdef FERMION
 qtensor<double> H_spinless_fermion(double t, double p, double u)
 {
   tensor<double> lu(6,1,6,1);
@@ -196,6 +196,7 @@ qtensor<double> H_spinless_fermion(double t, double p, double u)
   ret.update(ru, 0,0,0,1);
   ret.update(ld, 0,1,0,0);
   ret.update(rd, 0,1,0,1);
+  ret.add_sign(0, -1, 0, 1);
   return ret;
 }
 
@@ -211,14 +212,15 @@ qtensor<double> H_spinless_fermion_ledge(double t, double p, double u)
   ld.update( t, 0,1,0);
   ld.update(-p, 0,3,0);
   tensor<double> ru(1,6,1); // c non-zero
-  ru.update( p, 5,0,2,0);
-  ru.update(-t, 5,0,4,0);
+  ru.update( p, 0,2,0);
+  ru.update(-t, 0,4,0);
 
   qtensor<double> ret(2,1,2);
   ret.update(lu, 0,0,0);
   ret.update(ru, 0,0,1);
   ret.update(ld, 1,0,0);
   ret.update(rd, 1,0,1);
+  ret.add_sign(-1, 0, 1);
   return ret;
 }
 
@@ -247,9 +249,10 @@ qtensor<double> H_spinless_fermion_redge(double t, double p, double u)
   ret.update(ru, 0,0,1);
   ret.update(ld, 1,0,0);
   ret.update(rd, 1,0,1);
+  ret.add_sign(-1, 0, 1);
   return ret;
 }
-
+#endif
 // ******************************************************************
 // 2-Potts model / Ising model: (with symmetry)
 //  J Sx_{i} Sx_{i+1} + H Sz{i} 

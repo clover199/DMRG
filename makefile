@@ -48,5 +48,5 @@ clean:
 	$(MAKE) -C ./src clean
 	
 fullclean:
-	rm -rf *.o *.txt *.out
+	rm -rf *.o *.txt *.out out*
 	$(MAKE) -C ./src clean

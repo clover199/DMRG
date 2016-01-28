@@ -3,8 +3,6 @@
 
 #ifdef SYMMETRY
   int add(int a, int b) {return (a+b+SYMMETRY)%SYMMETRY;}
-#elif defined FERMION
-  int add(int a, int b) {return (a+b+2)%2;}
 #else
   int add(int a, int b) {return a+b;}
 #endif

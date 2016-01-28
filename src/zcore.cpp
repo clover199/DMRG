@@ -165,7 +165,8 @@ void two_sites(int l, int r, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N');
-  my_mps(l).contract(U, vec, 'C', 'N');
+  U.conjugate();
+  my_mps(l).contract(U, vec, 'T', 'N');
   vec.contract(renv, V, 'N', 'T');
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N');
@@ -179,7 +180,7 @@ void update_two(int l, int r, int cutoff,
   lenv.contract(my_mps(l-1), 1, my_mpo[l], 0);
   lenv = lenv.exchange(3,4);
   qtensor< complex<double> > ope = my_mpo[r].exchange(0,2);
-  renv.contract(my_mps(r+1), 1, ope, 0);
+  renv.contract(my_mps(r+1), 1, ope, 0, true);
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
@@ -228,7 +229,8 @@ void update_two(int l, int r, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
-  my_mps(l).contract(U, vec, 'C', 'N', 2);
+  U.conjugate();
+  my_mps(l).contract(U, vec, 'T', 'N', 2);
   vec.contract(renv, V, 'N', 'T', 2);
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
@@ -287,7 +289,8 @@ void move2right(int l, int r, int cutoff,
   my_mps.center() = S;
 //  my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
-  my_mps(l).contract(U, vec, 'C', 'N', 2);
+  U.conjugate();
+  my_mps(l).contract(U, vec, 'T', 'N', 2);
 //  vec.contract(renv, V, 'N', 'T');
 //  V.conjugate();
 //  my_mps(r).contract(V, vec, 'N', 'N');
@@ -300,7 +303,7 @@ void move2left(int l, int r, int cutoff,
 {
   lenv = my_mps(l);
   qtensor< complex<double> > ope = my_mpo[r].exchange(0,2);
-  renv.contract(my_mps(r+1), 1, ope, 0);
+  renv.contract(my_mps(r+1), 1, ope, 0, true);
   renv = renv.exchange(0,1);
   
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
@@ -348,7 +351,8 @@ void move2left(int l, int r, int cutoff,
   my_mps.center() = S;
   my_mps[r] = V;
 //  vec.contract(lenv, U, 'N', 'N');
-//  my_mps(l).contract(U, vec, 'C', 'N');
+//  U.conjugate();
+//  my_mps(l).contract(U, vec, 'T', 'N');
   vec.contract(renv, V, 'N', 'T', 2);
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
@@ -380,15 +384,20 @@ void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
     cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
     move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector);
   }
-  for(int i=L-2;i>0;i--)
+  for(int s=0;s<sweep;s++)
   {
-    cout << "<<<<<<<<<< sweep=1 l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
-    move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
-  }
-  for(int i=1;i<L-1;i++)
-  {
-    cout << ">>>>>>>>>> sweep=1 l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
-    move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
+    for(int i=L-2;i>0;i--)
+    {
+      cout << "<<<<<<<<<< sweep=" << s
+           << " l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
+      move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
+    }
+    for(int i=1;i<L-1;i++)
+    {
+      cout << ">>>>>>>>>> sweep=" << s
+           << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+      move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
+    }
   }
   data_energy.close();
   data_singular.close();

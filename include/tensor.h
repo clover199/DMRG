@@ -120,7 +120,8 @@ public:
   // beta=0 will erase the original data in out
   // bata=1 will add the result to the original data in out
   void contract(T* out, T* in, int row, int col,
-                char transa='N', char transb='N', int num=1, double beta=0);
+                char transa='N', char transb='N', int num=1,
+                double beta=0, double alpha=1);
   
   // SVD between first num and the rest indexes
   // A = U * S * V

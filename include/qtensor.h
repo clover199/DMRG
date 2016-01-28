@@ -23,7 +23,9 @@ private:
   
   // get/check "dim_" from "sym_" and "val_"
   void check_dim_(int n);
-
+#ifdef FERMION
+  vector<int> dir_; // -1 means left, 1 means right, 0 meas not a physical index
+#endif
 public:
   // claim space with all elements as zero
   qtensor(int i0=0, int i1=0, int i2=0, int i3=0, 
@@ -35,6 +37,11 @@ public:
   void update(tensor<T>& val,
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
+			  
+#ifdef FERMION
+  void add_sign(int i0=2, int i1=2, int i2=2, int i3=2, 
+                int i4=2, int i5=2, int i6=2, int i7=2);
+#endif
   
   vector< vector<int> > dimension_all() const {return dim_;}
   
@@ -109,6 +116,7 @@ public:
   }
   
   // contract tensor A and B with the left/right most index
+  // This function cannot be used for fermion operator contraction
   qtensor& contract(qtensor& A, qtensor& B,
                     char transa='N', char transb='N', int num=1);
   
@@ -119,7 +127,9 @@ public:
   }
   
   // contract index a of tensor A with index b of tensor B
-  qtensor& contract(const qtensor& A, int a, const qtensor& B, int b);
+  // change is only used for fermions. change=true: exchange A,B position
+  qtensor& contract(const qtensor& A, int a, const qtensor& B, int b,
+                    bool change = false);
   
   // multiply the tensor by an array (as a matrix)
   // used in the sparse matrix multiplication routine in dmrg 

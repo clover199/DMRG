@@ -46,13 +46,13 @@ qtensor<double> H_Ising_redge(double j=1., double h=1.);
 //   P=0: Hubbard model
 // T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. + U c^d_{i] c_{i}
 // Where T is the hopping parameter and P is the pairing parameter
-
+#ifdef FERMION
 qtensor<double> H_spinless_fermion(double t=1., double p=1., double u=1.);
 
 qtensor<double> H_spinless_fermion_ledge(double t=1., double p=1., double u=1.);
 
 qtensor<double> H_spinless_fermion_redge(double t=1., double p=1., double u=1.);
-
+#endif
 // ******************************************************************
 // 2-Potts model / Ising model: (with symmetry)
 //  J Sz_{i} Sz_{i+1} + H Sx{i} 

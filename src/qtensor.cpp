@@ -100,6 +100,33 @@ void qtensor<T>::update(tensor<T>& val,
     cerr << "Error in tensor_quantum update: "
             "The number of index doesn't match. \n";
 }
+
+
+template <typename T>
+qtensor<T> qtensor<T>::id() const
+{
+  qtensor<T> ret;
+  ret.dim_ = dim_;
+#ifdef FERMION
+  ret.dir_ = dir_;
+#endif
+  ret.sym_.clear();
+  ret.val_.clear();
+  vector<int> index(dim_.size(), 0);
+  vector< vector<int> > map;
+  for(int s=0;s<val_.size();s++) if(sym_[s][0]==sym_[s][2] and sym_[s][1]==sym_[s][3])
+  {
+    ret.sym_.push_back(sym_[s]);
+    ret.val_.push_back(val_[s]);
+    for(int i=0;i<index.size();i++) index[i] = dim_[i][sym_[s][i]];
+    generate_map(map, index);
+    for(int i=0;i<map.size();i++) if(map[i][0]==map[i][2] and map[i][1]==map[i][3])
+      ret.val_.back().val_[i] = 1;
+    else ret.val_.back().val_[i] = 0;
+  }
+  return ret;
+}
+
 		  
 #ifdef FERMION
 template <typename T>
@@ -125,14 +152,14 @@ void qtensor<T>::add_sign(int i0, int i1, int i2, int i3,
 template <typename T>
 void qtensor<T>::print() const
 {
-#ifdef FERMION
-  cout << "This is a fermionic tensor with sigh direction: (" << dir_[0];
-  for(int i=1;i<dir_.size();i++) cout << ", " << dir_[i];
-  cout << ")\n";
-#endif
   if(dim_.size()==0) cout << "Empty!" << endl;
   else
   {
+#ifdef FERMION
+    cout << "This is a fermionic tensor with sigh direction: (" << dir_[0];
+    for(int i=1;i<dir_.size();i++) cout << ", " << dir_[i];
+    cout << ")\n";
+#endif
     cout << "Dimension for different symmetry sectors:\n";
     for(int i=0;i<dim_.size();i++)
     {
@@ -581,13 +608,6 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
             "dimensions do not match.\n" ;
     return *this;
   }
-  if( A.sym_ != B.sym_ )
-  {
-    cerr << "Error in tensor_quantum plus: "
-            "symmetries do not match.\n" ;
-    return *this;
-  }
-  
 #ifdef FERMION
   if( A.dir_ != B.dir_ )
   {
@@ -597,10 +617,46 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
   }
   dir_ = A.dir_;
 #endif
+
   dim_ = A.dim_;
-  sym_ = A.sym_;
-  val_.resize(A.val_.size());
-  for(int i=0;i<val_.size();i++) val_[i].plus(A.val_[i], B.val_[i], alpha, beta);
+
+  vector<int> a(A.sym_.size(), 0);
+  for(int i=0;i<a.size();i++) for(int j=0;j<A.dim_.size();j++)
+    a[i] = a[i]*A.dim_[j].size() + A.sym_[i][j];
+  vector<int> b(B.sym_.size(), 0);
+  for(int i=0;i<b.size();i++) for(int j=0;j<B.dim_.size();j++)
+    b[i] = b[i]*B.dim_[j].size() + B.sym_[i][j];
+  vector< vector<int> > map;
+  int d = 1;  // the number of all possible symmetries
+  for(int i=0;i<A.dim_.size();i++) d *= A.dim_[i].size();
+  for(int i=0;i<d;i++)
+  {
+    vector<int> loc(2,-1);
+    for(int j=0;j<a.size();j++) if(a[j]==i) loc[0] = j;
+    for(int j=0;j<b.size();j++) if(b[j]==i) loc[1] = j;
+    if(loc[0]!=-1 or loc[1]!=-1) map.push_back(loc);
+  }
+
+  sym_.resize(map.size());
+  val_.resize(map.size());
+  for(int i=0;i<map.size();i++)
+  {
+    if(map[i][0]==-1)
+    {
+      sym_[i] = B.sym_[map[i][1]];
+      val_[i] = B.val_[map[i][1]].times(beta);
+    }
+    else if(map[i][1]==-1)
+    {
+      sym_[i] = A.sym_[map[i][0]];
+      val_[i] = A.val_[map[i][0]].times(alpha);
+    }
+    else
+    {
+      sym_[i] = A.sym_[map[i][0]];
+      val_[i].plus(A.val_[map[i][0]], B.val_[map[i][1]], alpha, beta);
+    }
+  }
   return *this;
 }
 
@@ -1082,9 +1138,9 @@ int qtensor<T>::eig(double* val, T* vec, int sector)
     check = true;
     return 0;
   }
-  if(sym_.size()==1) return val_[0].eig(val, vec);
   if(check or sector==-1)
   {
+    if(sym_.size()==1) return val_[0].eig(val, vec);
     qtensor<T> temp;
     temp = remove_symmetry();
     return temp.eig(val, vec, -1);

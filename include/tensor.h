@@ -88,6 +88,12 @@ public:
   
   // result = alpha * A + beta * B
   tensor& plus(const tensor& A, const tensor& B, T alpha=1, T beta=1);
+
+  tensor times(T alpha) const {
+    tensor<T> ret = *this;
+    for(int i=0;i<val_.size();i++) ret.val_[i] *= alpha;
+    return ret;
+  }
   
   tensor operator+(const tensor& A) const {
     tensor<T> ret;

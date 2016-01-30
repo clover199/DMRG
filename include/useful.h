@@ -11,6 +11,10 @@ int add(int a, int b);
 
 void print_matrix(const vector< vector<int> >& map);
 
+void print_energy(ofstream& data, int l ,int r, double* val, int n=NEV);
+
+void print_singular(ofstream& data, int l, int r, const vector<double>& s);
+
 void generate_map(vector< vector<int> >& map, const vector<int>& index);
 
 int get_dimension(const vector< vector<int> >& dim,

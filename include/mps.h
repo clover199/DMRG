@@ -15,7 +15,9 @@ private:
   vector< qtensor<T> > state_;
 
   vector< qtensor<T> > store_;
-
+#ifdef PBC
+  vector< qtensor<T> > edge_;
+#endif
   qtensor<double> singular_;
   
 public:
@@ -24,13 +26,16 @@ public:
     cut_ = 0;
     state_.resize(in.size()); 
     store_.resize(in.size()); 
+#ifdef PBC
+    edge_.resize(in.size());
+#endif
   }
   
   void print() const {
     cout << "Print all MPS state" << endl;
     for(int i=0;i<state_.size();i++)
     {
-      cout << i << ": ";
+      cout << i << ": ";cout<<endl;
       state_[i].print();
       cout << endl;
     }
@@ -41,7 +46,25 @@ public:
       store_[i].print();
       cout << endl;
     }
+#ifdef PBC
+    cout << "Print all edge tensor" << endl;
+    for(int i=0;i<edge_.size();i++)
+    {
+      cout << i << ": ";
+      edge_[i].print();
+      cout << endl;
+    }
+#endif
   }
+  
+#ifdef PBC
+  void add_edge(const qtensor<T>& left, const qtensor<T>& right) {
+    edge_[0] = left;
+    edge_[edge_.size()-1] = right;
+  }
+
+  qtensor<T>& edge(int n) { return edge_[n];}
+#endif
 
   int size() const { return state_.size(); }
   

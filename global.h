@@ -11,8 +11,9 @@
 #include <cstdlib>
 #include <ctime>
 
-#define FERMION
-#define SYMMETRY 2
+//#define PBC
+//#define FERMION
+#define SYMMETRY 3
 
 #define TOL 1e-10
 #define NEV 6  // the number of eig-vals to be claculated

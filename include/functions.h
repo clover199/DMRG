@@ -15,7 +15,6 @@ vector<string> set_para_name(string s1="", string s2="", string s3="", string s4
 vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, int& sweep,
                             int& sector, vector<string>& para_name, string& filename);
 
-
 void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep,
           int sector, const string& filename);
 

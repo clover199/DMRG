@@ -37,7 +37,9 @@ public:
   void update(tensor<T>& val,
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
-			  
+
+  qtensor id() const;
+
 #ifdef FERMION
   void add_sign(int i0=2, int i1=2, int i2=2, int i3=2, 
                 int i4=2, int i5=2, int i6=2, int i7=2);

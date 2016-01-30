@@ -20,6 +20,39 @@ void print_matrix(const vector< vector<int> >& map)
 }
 
 
+void print_energy(ofstream& data, int l ,int r, double* val, int n)
+{
+  cout << "Energy:\n";
+  for(int i=0;i<n;i++) cout << "  " << val[i] << endl;
+  data << l << "\t" << r;
+  if(NEV<=n) for(int i=0;i<NEV;i++) data << "\t" << val[i];
+  else
+  {
+    for(int i=0;i<n;i++) data << "\t" << val[i];
+    for(int i=n;i<NEV;i++) data << "\t" << 0;
+  }
+  data << endl;
+}
+
+
+void print_singular(ofstream& data, int l, int r, const vector<double>& s)
+{
+  cout << "Singular value:\n";
+  for(int i=0;i<s.size();i++) cout << "  " << s[i] << endl;
+  double entropy = 0;
+  for(int i=0;i<s.size();i++) entropy += -s[i]*s[i]*log(s[i]*s[i]+TOL);
+  cout << "Entropy: " << entropy << endl;
+  data << l << "\t" << r << "\t" << entropy;
+  if(s.size()>=NSI) for(int i=0;i<NSI;i++) data << "\t" << s[i];
+  else
+  {
+    for(int i=0;i<s.size();i++) data << "\t" << s[i];
+    for(int i=s.size();i<NSI;i++) data << "\t" << 0;
+  }
+  data << endl;
+}
+
+
 // generate the full array of all possible symmetries (sorted) given index 
 // i.e. index=[4,1,3], then
 // map=[ [0,0,0]

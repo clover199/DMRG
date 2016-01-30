@@ -15,7 +15,6 @@ qtensor<double> sigma_x()
   return ret;
 }
 
-
 // 0 -i  without symmetry
 // i  0
 qtensor< complex<double> > sigma_y()
@@ -27,7 +26,6 @@ qtensor< complex<double> > sigma_y()
   ret.update(x, 0,0);
   return ret;
 }
-
 
 // 1  0  without symmetry
 // 0 -1
@@ -41,7 +39,7 @@ qtensor<double> sigma_z()
   return ret;
 }
 
-
+#ifdef FERMION
 // spinless fermion annihilation operator c
 // basis: 0 1.  symmetry: 0 1.
 // 0 1
@@ -53,9 +51,9 @@ qtensor<double> fermion_c()
   qtensor<double> ret(2,2);
   ret.update(ld, 1,0);
   ret.update(ru, 0,1);
+  ret.add_sign(-1, 1);
   return ret;
 }
-
 
 // spinfull fermion annihilation operator c_up
 // basis: 0 2 u d.  symmetry: 0 1.
@@ -70,9 +68,9 @@ qtensor<double> fermion_c_up()
   qtensor<double> ret(2,2);
   ret.update(ru, 0,1);
   ret.update(ld, 1,0);
+  ret.add_sign(-1, 1);
   return ret;
 }
-
 
 // spinfull fermion annihilation operator c_down
 // basis: 0 2 u d.  symmetry: 0 1.
@@ -87,8 +85,10 @@ qtensor<double> fermion_c_down()
   qtensor<double> ret(2,2);
   ret.update(ru, 0,1);
   ret.update(ld, 1,0);
+  ret.add_sign(-1, 1);
   return ret;
 }
+#endif
 
 // ***********************
 // *  2       3       2  *
@@ -99,7 +99,7 @@ qtensor<double> fermion_c_down()
 // ***********************
 
 // ******************************************************************
-// Ising model: J Sz_{i} Sz_{i+1} + H Sx{i}
+// Ising model: J Sz_{i} Sz_{i+1} + H Sx{i} (no symmetry considered)
 //
 //  MPO: I     0     0      Sz: 1  0     Sx: 0 1
 //       Sz    0     0          0 -1         1 0
@@ -124,7 +124,7 @@ qtensor<double> H_Ising(double j, double h)
   return ret;
 }
 
-//  MPO: H*Sx  J*Sz   I
+//  MPO: H*Sx  J*Sz  I
 qtensor<double> H_Ising_ledge(double j, double h)
 {
   tensor<double> x(2,3,2);
@@ -140,9 +140,7 @@ qtensor<double> H_Ising_ledge(double j, double h)
   return ret;
 }
 
-//  MPO: I
-//       Sz
-//      H*Sx
+//  MPO: I  Sz  H*Sx
 qtensor<double> H_Ising_redge(double j, double h)
 {
   tensor<double> x(2,3,2);
@@ -158,101 +156,6 @@ qtensor<double> H_Ising_redge(double j, double h)
   return ret;
 }
 
-// ******************************************************************
-// spinless fermion Hamiltonian:
-// T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. + U c^d_{i] c_{i}
-//
-//   MPO: I     0     0     0     0     0         c: 0 1     c^d: 0 0
-//        c     0     0     0     0     0            0 0          1 0
-//        c     0     0     0     0     0
-//       c^d    0     0     0     0     0
-//       c^d    0     0     0     0     0
-//       U*n  T*c^d  P*c -P*c^d -T*c    I
-//
-// Where T is the hopping parameter and P is the pairing parameter
-#ifdef FERMION
-qtensor<double> H_spinless_fermion(double t, double p, double u)
-{
-  tensor<double> lu(6,1,6,1);
-  lu.update(1, 0,0,0,0);
-  lu.update(1, 5,0,5,0);
-  tensor<double> rd(6,1,6,1);
-  rd.update(1, 0,0,0,0);
-  rd.update(u, 5,0,0,0);
-  rd.update(1, 5,0,5,0);
-  tensor<double> ld(6,1,6,1); // c^d non-zero
-  ld.update( 1, 3,0,0,0);
-  ld.update( 1, 4,0,0,0);
-  ld.update( t, 5,0,1,0);
-  ld.update(-p, 5,0,3,0);
-  tensor<double> ru(6,1,6,1); // c non-zero
-  ru.update( 1, 1,0,0,0);
-  ru.update( 1, 2,0,0,0);
-  ru.update( p, 5,0,2,0);
-  ru.update(-t, 5,0,4,0);
-
-  qtensor<double> ret(1,2,1,2);
-  ret.update(lu, 0,0,0,0);
-  ret.update(ru, 0,0,0,1);
-  ret.update(ld, 0,1,0,0);
-  ret.update(rd, 0,1,0,1);
-  ret.add_sign(0, -1, 0, 1);
-  return ret;
-}
-
-//  MPO: U*n  T*c^d  P*c -P*c^d -T*c  I
-qtensor<double> H_spinless_fermion_ledge(double t, double p, double u)
-{
-  tensor<double> lu(1,6,1);
-  lu.update(1, 0,5,0);
-  tensor<double> rd(1,6,1);
-  rd.update(u, 0,0,0);
-  rd.update(1, 0,5,0);
-  tensor<double> ld(1,6,1); // c^d non-zero
-  ld.update( t, 0,1,0);
-  ld.update(-p, 0,3,0);
-  tensor<double> ru(1,6,1); // c non-zero
-  ru.update( p, 0,2,0);
-  ru.update(-t, 0,4,0);
-
-  qtensor<double> ret(2,1,2);
-  ret.update(lu, 0,0,0);
-  ret.update(ru, 0,0,1);
-  ret.update(ld, 1,0,0);
-  ret.update(rd, 1,0,1);
-  ret.add_sign(-1, 0, 1);
-  return ret;
-}
-
-//   MPO: I
-//        c
-//        c
-//       c^d
-//       c^d
-//       U*n 
-qtensor<double> H_spinless_fermion_redge(double t, double p, double u)
-{
-  tensor<double> lu(1,6,1);
-  lu.update(1, 0,0,0);
-  tensor<double> rd(1,6,1);
-  rd.update(1, 0,0,0);
-  rd.update(u, 0,5,0);
-  tensor<double> ld(1,6,1); // c^d non-zero
-  ld.update( 1, 0,3,0);
-  ld.update( 1, 0,4,0);
-  tensor<double> ru(1,6,1); // c non-zero
-  ru.update( 1, 0,1,0);
-  ru.update( 1, 0,2,0);
-
-  qtensor<double> ret(2,1,2);
-  ret.update(lu, 0,0,0);
-  ret.update(ru, 0,0,1);
-  ret.update(ld, 1,0,0);
-  ret.update(rd, 1,0,1);
-  ret.add_sign(-1, 0, 1);
-  return ret;
-}
-#endif
 // ******************************************************************
 // 2-Potts model / Ising model: (with symmetry)
 //  J Sx_{i} Sx_{i+1} + H Sz{i} 
@@ -471,3 +374,95 @@ qtensor< complex<double> > H_Potts_redge(double f, double j, double p, double t)
   ret.update(l22, 2,0,2);
   return ret;
 }
+
+#ifdef FERMION
+// ******************************************************************
+// spinless fermion Hamiltonian:
+// T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. + U c^d_{i] c_{i}
+//
+//   MPO: I     0     0     0     0     0         c: 0 1     c^d: 0 0
+//        c     0     0     0     0     0            0 0          1 0
+//        c     0     0     0     0     0
+//       c^d    0     0     0     0     0
+//       c^d    0     0     0     0     0
+//       U*n  T*c^d  P*c -P*c^d -T*c    I
+//
+// Where T is the hopping parameter and P is the pairing parameter
+
+qtensor<double> H_spinless_fermion(double t, double p, double u)
+{
+  tensor<double> lu(6,1,6,1);
+  lu.update(1, 0,0,0,0);
+  lu.update(1, 5,0,5,0);
+  tensor<double> rd(6,1,6,1);
+  rd.update(1, 0,0,0,0);
+  rd.update(u, 5,0,0,0);
+  rd.update(1, 5,0,5,0);
+  tensor<double> ld(6,1,6,1); // c^d non-zero
+  ld.update( 1, 3,0,0,0);
+  ld.update( 1, 4,0,0,0);
+  ld.update( t, 5,0,1,0);
+  ld.update(-p, 5,0,3,0);
+  tensor<double> ru(6,1,6,1); // c non-zero
+  ru.update( 1, 1,0,0,0);
+  ru.update( 1, 2,0,0,0);
+  ru.update( p, 5,0,2,0);
+  ru.update(-t, 5,0,4,0);
+
+  qtensor<double> ret(1,2,1,2);
+  ret.update(lu, 0,0,0,0);
+  ret.update(ru, 0,0,0,1);
+  ret.update(ld, 0,1,0,0);
+  ret.update(rd, 0,1,0,1);
+  ret.add_sign(0, -1, 0, 1);
+  return ret;
+}
+
+//  MPO: U*n  T*c^d  P*c -P*c^d -T*c  I
+qtensor<double> H_spinless_fermion_ledge(double t, double p, double u)
+{
+  tensor<double> lu(1,6,1);
+  lu.update(1, 0,5,0);
+  tensor<double> rd(1,6,1);
+  rd.update(u, 0,0,0);
+  rd.update(1, 0,5,0);
+  tensor<double> ld(1,6,1); // c^d non-zero
+  ld.update( t, 0,1,0);
+  ld.update(-p, 0,3,0);
+  tensor<double> ru(1,6,1); // c non-zero
+  ru.update( p, 0,2,0);
+  ru.update(-t, 0,4,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(lu, 0,0,0);
+  ret.update(ru, 0,0,1);
+  ret.update(ld, 1,0,0);
+  ret.update(rd, 1,0,1);
+  ret.add_sign(-1, 0, 1);
+  return ret;
+}
+
+//   MPO: I  c  c  c^d  c^d  U*n 
+qtensor<double> H_spinless_fermion_redge(double t, double p, double u)
+{
+  tensor<double> lu(1,6,1);
+  lu.update(1, 0,0,0);
+  tensor<double> rd(1,6,1);
+  rd.update(1, 0,0,0);
+  rd.update(u, 0,5,0);
+  tensor<double> ld(1,6,1); // c^d non-zero
+  ld.update( 1, 0,3,0);
+  ld.update( 1, 0,4,0);
+  tensor<double> ru(1,6,1); // c non-zero
+  ru.update( 1, 0,1,0);
+  ru.update( 1, 0,2,0);
+
+  qtensor<double> ret(2,1,2);
+  ret.update(lu, 0,0,0);
+  ret.update(ru, 0,0,1);
+  ret.update(ld, 1,0,0);
+  ret.update(rd, 1,0,1);
+  ret.add_sign(-1, 0, 1);
+  return ret;
+}
+#endif

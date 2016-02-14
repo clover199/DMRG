@@ -134,12 +134,12 @@ void two_sites(int size, int cutoff,
     r_num = 1;
     l_num = 2;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
 //    check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
@@ -155,7 +155,7 @@ void two_sites(int size, int cutoff,
   print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N');
   U.conjugate();
@@ -232,12 +232,12 @@ void update_two(int l, int r, int cutoff,
     r_num = 2;
     l_num = 3;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
 //    check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
@@ -254,7 +254,7 @@ void update_two(int l, int r, int cutoff,
   print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
   U.conjugate();
@@ -315,25 +315,25 @@ void move2right(int l, int r, int cutoff,
     whole = whole.combine(0,1);
     cout << "Using ED, d=" << d << endl;
     whole.eig(val, vecs, sector);
-    print_energy(data_energy, l, l, val, d);
+    print_energy(data_energy, l, r, val, d);
   }
   else
   {
     r_num = 1;
     l_num = 3;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
   //  check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, NEV, val, vecs, av2);
     delete store;
-    print_energy(data_energy, l, l, val);
+    print_energy(data_energy, l, r, val);
   }
 
   qtensor<double> vec(vecs, dim, sym);
@@ -341,10 +341,10 @@ void move2right(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(data_singular, l, l, s);
+  print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
 //  my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
   U.conjugate();
@@ -408,25 +408,25 @@ void move2left(int l, int r, int cutoff,
     val = new double [d];
     cout << "Using ED, d=" << d << endl;
     whole.eig(val, vecs, sector);
-    print_energy(data_energy, r, r, val, d);
+    print_energy(data_energy, l, r, val, d);
   }
   else
   {
     r_num = 2;
     l_num = 2;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new double [d_store];
 //    check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
     dsaupd(d, NEV, val, vecs, av2);
     delete store;
-    print_energy(data_energy, r, r, val);
+    print_energy(data_energy, l, r, val);
   }
 
   qtensor<double> vec(vecs, dim, sym);
@@ -434,10 +434,10 @@ void move2left(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(data_singular, r, r, s);
+  print_singular(data_singular, l, r, s);
 
 //  my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
 //  vec.contract(lenv, U, 'N', 'N');
 //  U.conjugate();
@@ -478,7 +478,7 @@ void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
     cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
     update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector);
   }
-  for(int i=L/2;i<L-1;i++)
+  if(sweep!=-1) for(int i=L/2;i<L-1;i++)
   {
     cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
     move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector);
@@ -487,17 +487,23 @@ void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
   {
     for(int i=L-2;i>0;i--)
     {
-      cout << "<<<<<<<<<< sweep=" << s
-           << " l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
+      cout << "<<<<<<<<<< sweep=" << s+1
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
       move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
     }
     for(int i=1;i<L-1;i++)
     {
-      cout << ">>>>>>>>>> sweep=" << s
+      cout << ">>>>>>>>>> sweep=" << s+1
            << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
       move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
     }
   }
+  if(sweep!=-1) for(int i=L-2;i>=L/2;i--)
+  {
+    cout << "<<<<<<<<<< final l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+    move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
+  }
+
   data_energy.close();
   data_singular.close();
 }

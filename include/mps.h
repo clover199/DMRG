@@ -32,7 +32,7 @@ public:
   }
   
   void print() const {
-    cout << "Print all MPS state" << endl;
+    cout << "Print all MPS state: (cut=" << cut_ << ")\n";
     for(int i=0;i<state_.size();i++)
     {
       cout << i << ": ";cout<<endl;
@@ -66,6 +66,8 @@ public:
   qtensor<T>& edge(int n) { return edge_[n];}
 #endif
 
+  int position() const { return cut_; }
+
   int size() const { return state_.size(); }
   
   qtensor<T>& operator[](int n) { return state_[n]; }
@@ -73,6 +75,22 @@ public:
   qtensor<T>& operator()(int n) { return store_[n]; }
   
   qtensor<double>& center() { return singular_; }
+
+  qtensor<double>& center(int n) { cut_ = n; return singular_; }
+
+  mps inverse() const {
+    mps<T> ret = *this;
+    int size = state_.size();
+    if(cut_!= size/2)
+    {
+      cout << "Error in mps inverse: cut=" << cut_ << " not in center.\n";
+      return ret;
+    }
+    for(int i=1;i<size-1;i++) ret.state_[size-1-i] = state_[i].exchange(0,2);
+    ret.state_[0] = state_[size-1].exchange(0,1);
+    ret.state_[size-1] = state_[0].exchange(0,1);
+    return ret;
+  }
 };
 
 #endif

@@ -34,6 +34,7 @@ namespace{
   vector< vector<int> > lemap;
   vector< vector<int> > remap;
 #endif
+  bool print;
 }
 
 
@@ -64,7 +65,7 @@ void check_hermitian_complex(int n)
       for(int s=0;s<n;s++) in[s] = 0;
       in[i] = 1;
       av2(n, in, out);
-      if(abs(temp-out[j])>TOL)
+      if(abs(conj(temp)-out[j])>TOL)
         cout << "Not hermitian! " << i << " " << j << " " 
              << temp << " " << out[j] << endl;
       ;
@@ -134,16 +135,16 @@ void two_sites(int size, int cutoff,
     r_num = 1;
     l_num = 2;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
 //    check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
-    znaupd(d, 1, val, vecs, av2);
+    znaupd(d, NEV, val, vecs, av2);
     delete store;
     print_energy(data_energy, l, r, val);
   }
@@ -156,8 +157,9 @@ void two_sites(int size, int cutoff,
   print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
+
   vec.contract(lenv, U, 'N', 'N');
   U.conjugate();
   my_mps(l).contract(U, vec, 'T', 'N');
@@ -199,10 +201,11 @@ void update_two(int l, int r, int cutoff,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, lenv, 2, renv, 2, sector);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*10];
+  double *val = new double [NEV];
   complex<double> *vecs = new complex<double> [d];
-  if(d<NEV*10)
+  if(0)
   {  // check energy using ED
+    val = new double [d];
     qtensor<complex<double> > whole, tlenv, trenv;
     tlenv = lenv.combine(3,4);
     tlenv = tlenv.combine(0,1);
@@ -226,21 +229,21 @@ void update_two(int l, int r, int cutoff,
     whole = whole.combine(0,1);
     cout << "Using ED, d=" << d << endl;
     whole.eig(val, vecs, sector);
-    print_energy(data_energy, l, r, val, d);
+    print_energy(data_energy, l, r, val, NEV);
   }
-  else
+//  else
   {
     r_num = 2;
     l_num = 3;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
-//    check_hermitian(d);
+//    check_hermitian_complex(d);
     cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
@@ -255,7 +258,7 @@ void update_two(int l, int r, int cutoff,
   print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
   vec.contract(lenv, U, 'N', 'N', 2);
   U.conjugate();
@@ -293,9 +296,9 @@ void move2right(int l, int r, int cutoff,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, lenv, 2, renv, 1, sector);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*10];
+  double *val = new double [NEV];
   complex<double> *vecs = new complex<double> [d];
-  if(d<NEV*10)
+  if(d<NEV)
   {  // check energy using ED
     qtensor<complex<double> > whole, tlenv;
     tlenv = lenv.combine(3,4);
@@ -316,25 +319,25 @@ void move2right(int l, int r, int cutoff,
     whole = whole.combine(0,1);
     cout << "Using ED, d=" << d << endl;
     whole.eig(val, vecs, sector);
-    print_energy(data_energy, l, l, val, d);
+    print_energy(data_energy, l, r, val, d);
   }
   else
   {
     r_num = 1;
     l_num = 3;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
   //  check_hermitian(d);
     cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
-    print_energy(data_energy, l, l, val);
+    print_energy(data_energy, l, r, val);
   }
 
   qtensor<complex<double> > vec(vecs, dim, sym);
@@ -342,26 +345,18 @@ void move2right(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(data_singular, l, l, s);
+  print_singular(data_singular, l, r, s);
 
   my_mps[l] = U;
-  my_mps.center() = S;
-//  my_mps[r] = V;
+  my_mps.center(l+1) = S;
   vec.contract(lenv, U, 'N', 'N', 2);
   U.conjugate();
   my_mps(l).contract(U, vec, 'T', 'N', 2);
-//  vec.contract(renv, V, 'N', 'T');
-//  V.conjugate();
-//  my_mps(r).contract(V, vec, 'N', 'N');
 #ifdef PBC
   U.conjugate();
   vec.contract(ledge, U, 'N', 'N', 2);
   U.conjugate();
   my_mps.edge(l).contract(U, vec, 'T', 'N', 2);
-//  V.conjugate();
-//  vec.contract(ledge, V, 'N', 'T');
-//  V.conjugate();
-//  my_mps.edge(r).contract(V, vec, 'N', 'N');
 #endif
 }
 
@@ -385,9 +380,9 @@ void move2left(int l, int r, int cutoff,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, lenv, 1, renv, 2, sector);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*10];
+  double *val = new double [NEV];
   complex<double> *vecs = new complex<double> [d];
-  if(d<NEV*10)
+  if(d<NEV)
   {  // check energy using ED
     qtensor<complex<double> > whole, trenv;
     trenv = renv.combine(3,4);
@@ -409,25 +404,25 @@ void move2left(int l, int r, int cutoff,
     val = new double [d];
     cout << "Using ED, d=" << d << endl;
     whole.eig(val, vecs, sector);
-    print_energy(data_energy, r, r, val, d);
+    print_energy(data_energy, l, r, val, d);
   }
   else
   {
     r_num = 2;
     l_num = 2;
     renv.get_map(rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
     lenv.get_map(lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 0, true);
 #ifdef PBC
     redge.get_map(remap, dim_ret, sym_ret, dim, sym, 'N', 'T', r_num, 0);
     ledge.get_map(lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', l_num, 1, true);
 #endif
-    int d_store = get_dimension(dim_ret, sym_ret);
     store = new complex<double> [d_store];
-//    check_hermitian(d);
+//    check_hermitian_complex(d);
     cout << "Using Lanczos, d=" << d << endl;
     znaupd(d, NEV, val, vecs, av2);
     delete store;
-    print_energy(data_energy, r, r, val);
+    print_energy(data_energy, l, r, val);
   }
 
   qtensor<complex<double> > vec(vecs, dim, sym);
@@ -435,22 +430,14 @@ void move2left(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(data_singular, r, r, s);
+  print_singular(data_singular, l, r, s);
 
-//  my_mps[l] = U;
-  my_mps.center() = S;
+  my_mps.center(l+1) = S;
   my_mps[r] = V;
-//  vec.contract(lenv, U, 'N', 'N');
-//  U.conjugate();
-//  my_mps(l).contract(U, vec, 'T', 'N');
   vec.contract(renv, V, 'N', 'T', 2);
   V.conjugate();
   my_mps(r).contract(V, vec, 'N', 'N', 2);
 #ifdef PBC
-//  U.conjugate();
-//  vec.contract(ledge, U, 'N', 'N');
-//  U.conjugate();
-//  my_mps.edge(l).contract(U, vec, 'T', 'N');
   V.conjugate();
   vec.contract(redge, V, 'N', 'T', 2);
   V.conjugate();
@@ -479,7 +466,7 @@ void dmrg(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
     cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
     update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector);
   }
-  for(int i=L/2;i<L-1;i++)
+  if(sweep!=-1) for(int i=L/2;i<L-1;i++)
   {
     cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
     move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector);
@@ -488,17 +475,26 @@ void dmrg(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
   {
     for(int i=L-2;i>0;i--)
     {
-      cout << "<<<<<<<<<< sweep=" << s
-           << " l=" << i << " r=" << i+1 << " <<<<<<<<<<\n";
+      cout << "<<<<<<<<<< sweep=" << s+1
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
       move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
     }
     for(int i=1;i<L-1;i++)
     {
-      cout << ">>>>>>>>>> sweep=" << s
+      cout << ">>>>>>>>>> sweep=" << s+1
            << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
       move2right(i, i+1, cutoff, my_mps, my_mpo, sector);
     }
   }
+  if(sweep!=-1) for(int i=L-2;i>=L/2;i--)
+  {
+    cout << "<<<<<<<<<< final l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+    move2left(i-1, i, cutoff, my_mps, my_mpo, sector);
+  }
+  // I don't know why, but only adding this can make the MPS orthogonal
+//  move2right(L/2-1, L/2, cutoff, my_mps, my_mpo, sector);
+
+
   data_energy.close();
   data_singular.close();
 }

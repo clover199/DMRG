@@ -5,7 +5,7 @@ MY_SRC = "./src"
 
 all: 
 	$(MAKE) -C $(MY_SRC) all
-	g++ -g test.cpp -I ./include/ -I ./\
+	g++ -g 4e.cpp -I ./include/ -I ./\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \
@@ -25,7 +25,7 @@ all:
 
 %: %.cpp
 	$(MAKE) -C $(MY_SRC) all
-	g++ -g $< -I ./include/ -I./ -o $@.out\
+	g++ $< -I ./include/ -I./ -o $@.out\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \

@@ -165,6 +165,24 @@ tensor< complex<double> > tensor< complex<double> >::conjugate()
 }
 
 
+template <>
+tensor< complex<double> > tensor<double>::comp() const
+{
+  tensor< complex<double> > ret;
+  ret.index_ = index_;
+  ret.val_.resize(val_.size());
+  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i];
+  return ret;
+}
+
+
+template <>
+tensor< complex<double> > tensor< complex<double> >::comp() const
+{
+  return *this;
+}
+
+
 template <typename T>
 tensor<T> tensor<T>::exchange(int a, int b) const
 {
@@ -304,6 +322,10 @@ tensor<T> tensor<T>::resize(int index, int cutoff) const
     return *this;
   }
   
+  int d = 1;
+  for(int i=0;i<index_.size();i++) d *= index_[i];
+  if(d==0) return *this;
+
   tensor<T> ret;
   ret.index_ = index_;
   ret.index_[index] = cutoff;
@@ -357,6 +379,20 @@ tensor<T>& tensor<T>::plus(const tensor& A, const tensor& B,
   for(int i=0;i<A.val_.size();i++)
     val_[i] = alpha * A.val_[i] + beta * B.val_[i];
   return *this;
+}
+
+
+template <typename T>
+T tensor<T>::trace(tensor& A)
+{
+  if(index_!=A.index_)
+  {
+    cerr << "Error in tensor trace: The indexes are not the same.\n";
+    return 0.0;
+  }
+  T val = 0.0;
+  for(int i=0;i<val_.size();i++) val += val_[i]*A.val_[i];
+  return val;
 }
 
 

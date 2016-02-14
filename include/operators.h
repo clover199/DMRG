@@ -3,26 +3,6 @@
 
 #include "qtensor.h"
 
-// *******
-// *  1  *
-// *  |  *
-// *  O  *
-// *  |  *
-// *  0  *
-// *******
-
-qtensor<double> sigma_x();  // no symmetry
-
-qtensor< complex<double> > sigma_y();  // no symmetry
-
-qtensor<double> sigma_z();  // no symmetry
-
-qtensor<double> fermion_c();
-
-qtensor<double> fermion_c_up();
-
-qtensor<double> fermion_c_down();
-
 // ***********
 // *    3    *
 // *    |    *
@@ -31,47 +11,53 @@ qtensor<double> fermion_c_down();
 // *    1    *
 // ***********
 
-// ******************************************************************
-// Ising model: J Sz_{i} Sz_{i+1} + H Sz{i}
+qtensor<double> number();
 
-qtensor<double> H_Ising(double j=1., double h=1.);
-
-qtensor<double> H_Ising_ledge(double j=1., double h=1.);
-
-qtensor<double> H_Ising_redge(double j=1., double h=1.);
-
-// ******************************************************************
-// spinless fermion Hamiltonian:
-//   U=0: p-wave superconductor
-//   P=0: Hubbard model
-// T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. + U c^d_{i] c_{i}
-// Where T is the hopping parameter and P is the pairing parameter
 #ifdef FERMION
-qtensor<double> H_spinless_fermion(double t=1., double p=1., double u=1.);
+qtensor<double> fermion_c();
 
-qtensor<double> H_spinless_fermion_ledge(double t=1., double p=1., double u=1.);
+qtensor<double> fermion_c_up();
 
-qtensor<double> H_spinless_fermion_redge(double t=1., double p=1., double u=1.);
+qtensor<double> fermion_c_down();
+
+qtensor<double> fermion_pair();
+
+qtensor<double> fermion_n_up();
+
+qtensor<double> fermion_n_down();
+
+qtensor<double> fermion_n_pair();
+
+qtensor<double> fermion_parity(int n=2);
+
+qtensor<double> pair_parity();
 #endif
-// ******************************************************************
-// 2-Potts model / Ising model: (with symmetry)
-//  J Sz_{i} Sz_{i+1} + H Sx{i} 
-
-qtensor<double> H_2Potts(double j, double h);
-
-qtensor<double> H_2Potts_ledge(double j, double h);
-
-qtensor<double> H_2Potts_redge(double j, double h);
 
 // ******************************************************************
-// Three state Potts model (same as the paper):
+// Ising model (without symmetry): H Sx_{i} + J Sz_{i} Sz_{i+1}
+
+qtensor<double> H_Ising(double h, double j);
+
+// ******************************************************************
+// 2-Potts model / Ising model: H Sz_{i} + J Sx_{i} Sx_{i+1}
+
+qtensor<double> H_Potts2(double h, double j);
+
+// ******************************************************************
+// 3-state chiral Potts model (for the paper):
 //   p=0, t=0: three state Potts model
-// - fe^{-ip} T^d_{j} - Je^{-it} S^d_{j} S_{j+1}
+//   - f e^{-ip} T^d_{j} - Je^{-it} S^d_{j} S_{j+1}
 
-qtensor< complex<double> > H_Potts(double f, double j, double p=0, double t=0);
+qtensor< complex<double> > H_Potts3(double f, double j, double p=0, double t=0);
 
-qtensor< complex<double> > H_Potts_ledge(double f, double j, double p=0, double t=0);
+// ******************************************************************
+// Kitaev chain: - i u a_{j} b_{j} - i v b_{j] a_{j+1}
+//   u=2U, v=T=P:
+//   T c^d_{i} c_{i+1} - P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}
 
-qtensor< complex<double> > H_Potts_redge(double f, double j, double p=0, double t=0);
+#ifdef FERMION
+// qtensor<double> H_Kitaev(double t, double p, double u);
+qtensor<complex<double> > H_Kitaev(double t, complex<double> p, double u);
+#endif
 
 #endif

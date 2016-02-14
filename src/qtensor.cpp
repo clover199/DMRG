@@ -185,7 +185,7 @@ template <typename T>
 void qtensor<T>::print_all(bool all) const
 {
   print();
-  for(int n=0;n<val_.size();n++)
+  if(val_.size()!=0) for(int n=0;n<val_.size();n++)
   {
     cout << "Print all non-zero values of the tensor " << n << ":\n";
     vector< vector<int> > map;
@@ -196,7 +196,7 @@ void qtensor<T>::print_all(bool all) const
       for(int j=1;j<val_[n].index_.size();j++) cout << ", " << map[i][j];
       cout << ") " << val_[n].val_[i] << "\n";
     }
-    else if(abs(val_[n].val_[i])>TOL)
+    else if(abs(val_[n].val_[i])>ZERO)
     {
       cout << "(" << map[i][0];
       for(int j=1;j<val_[n].index_.size();j++) cout << ", " << map[i][j];
@@ -249,6 +249,27 @@ qtensor<T> qtensor<T>::conjugate()
   return *this;
 }
 
+
+template <>
+qtensor< complex<double> > qtensor<double>::comp() const
+{
+  qtensor<complex<double> > ret;
+  ret.dim_ = dim_;
+  ret.sym_ = sym_;
+#ifdef FERMION
+  ret.dir_ = dir_;
+#endif
+  ret.val_.resize(val_.size());
+  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i].comp();
+  return ret;
+}
+
+
+template <>
+qtensor< complex<double> > qtensor< complex<double> >::comp() const
+{
+  return *this;
+}
 
 template <typename T>
 qtensor<T> qtensor<T>::simplify() const
@@ -327,6 +348,86 @@ qtensor<T> qtensor<T>::shift(int num) const
     ret.val_[i] = val_[i].shift(num);
   }
   return ret; 
+}
+
+
+template <typename T>
+qtensor<T> qtensor<T>::take(int n, int k) const
+{
+  qtensor<T> ret;
+  if(n<0 or n>=dim_.size())
+  {
+    cout << "Error in tensor_quantum take: "
+            "the index " << n << " is out of the range 0~"
+         << dim_.size()-1 << endl;
+    return ret;
+  }
+
+  if(dim_[n].size()!=1)
+  {
+    cout << "Error in tensor_quantum take: "
+            "this index has symmetry " << dim_[n].size() << endl;
+    return ret;
+  }
+
+  if( k<0 or k>=dim_[n][0])
+  {
+    cout << "Error in tensor_quantum take: "
+            "the number " << k << " is out of the dimension range 0~" 
+         << dim_[n][0] << endl;
+    return ret;
+  }
+
+  ret.dim_.resize(dim_.size()-1);
+  for(int i=0;i<n;i++) ret.dim_[i] = dim_[i];
+  for(int i=n;i<ret.dim_.size();i++) ret.dim_[i] = dim_[i+1];
+
+#ifdef FERMION
+  ret.dir_.resize(dir_.size()-1);
+  for(int i=0;i<n;i++) ret.dir_[i] = dir_[i];
+  for(int i=n;i<ret.dir_.size();i++) ret.dir_[i] = dir_[i+1];
+#endif
+
+  ret.sym_.resize(sym_.size());
+  ret.val_.resize(val_.size());
+  vector< vector<int> > map;
+  for(int s=0;s<sym_.size();s++)
+  {
+    ret.sym_[s].resize(ret.dim_.size());
+    for(int i=0;i<n;i++) ret.sym_[s][i] = sym_[s][i];
+    for(int i=n;i<ret.dim_.size();i++) ret.sym_[s][i] = sym_[s][i+1];
+    ret.val_[s].index_.resize(ret.dim_.size());
+    for(int i=0;i<n;i++) ret.val_[s].index_[i] = val_[s].index_[i];
+    for(int i=n;i<ret.dim_.size();i++) ret.val_[s].index_[i] = val_[s].index_[i+1];
+    generate_map(map, val_[s].index_);
+    ret.val_[s].val_.resize(val_[s].val_.size()/val_[s].index_[n]);
+    for(int i=0;i<map.size();i++) if(map[i][n]==k)
+    {
+      int loc = 0;
+      vector<int> index(ret.dim_.size(),0);
+      for(int j=0;j<n;j++) index[j] = map[i][j];
+      for(int j=n;j<index.size();j++) index[j] = map[i][j+1];
+      for(int j=0;j<ret.dim_.size();j++) loc = loc*ret.val_[s].index_[j]+index[j];
+      ret.val_[s].val_[loc] = val_[s].val_[i];
+    }
+  }
+  return ret;
+}
+
+template <typename T>
+qtensor<T> qtensor<T>::left() const
+{
+  qtensor<T> ret = take(0, dim_[0][0]-1);
+  return ret;
+}
+
+
+template <typename T>
+qtensor<T> qtensor<T>::right() const
+{
+  qtensor<T> ret = take(2, 0);
+  ret = ret.exchange(0,1);
+  return ret;
 }
 
 
@@ -662,6 +763,42 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
 
 
 template <typename T>
+T qtensor<T>::trace(qtensor& A, bool fermion)
+{
+  if( A.dim_ != dim_ )
+  {
+    cerr << "Error in tensor_quantum trace: "
+            "dimensions do not match.\n" ;
+    return 0.0;
+  }
+#ifdef FERMION
+  if( A.dir_ != dir_ )
+  {
+    cerr << "Error in tensor_quantum trace: "
+            "fermion directions do not match.\n" ;
+    return 0.0;
+  }
+#endif
+
+  T ret = 0.0;
+  double sign = 1;
+  for(int l=0;l<sym_.size();l++) for(int r=0;r<A.sym_.size();r++)
+    if(sym_[l]==A.sym_[r])
+    {
+#ifdef FERMION
+int d_b = 0;
+for(int i=0;i<A.dir_.size();i++) d_b = add(d_b, A.sym_[r][i]*A.dir_[i]);
+int a_p = 0;
+for(int i=0;i<dir_.size();i++) if(dir_[i]==1) a_p = add(a_p, sym_[l][i]);
+sign = 1-2*((d_b*a_p)%2);
+#endif
+      ret += val_[l].trace(A.val_[r])*sign;
+    }
+  return ret;
+}
+
+
+template <typename T>
 qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
                                   char transa, char transb, int num)
 {
@@ -910,7 +1047,7 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
     bool check = true;
     for(int k=0;k<num;k++) if(sym_[i][indexa+k]!= sym[j][indexb+k])
       check = false;
-    if(check)
+    if(check and sym_dim[j][0]!=0)
     {
       map_store[0] = i;
       map_store[1] = sym_dim[j][2];
@@ -996,7 +1133,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
 #ifdef FERMION
   U.dir_ = vector<int> (2, 1);
   V.dir_ = vector<int> (2, 1);
-  S.dir_ = vector<int> (2, 0);
+  S.dir_ = vector<int> (2, 1);
 #endif
 
   U.dim_ = comb.dim_;
@@ -1130,15 +1267,15 @@ int qtensor<T>::eig(double* val, T* vec, int sector)
     return 0;
   }
 
-  bool check = false;
   for(int i=0;i<val_.size();i++) if(sym_[i][0]!=sym_[i][1])
   {
     cerr << "Warning in tensor_quantum eig: not block diagonalized."
             "Combining the symmetry sectors\n";
-    check = true;
-    return 0;
+    qtensor<T> temp;
+    temp = remove_symmetry();
+    return temp.eig(val, vec, -1);
   }
-  if(check or sector==-1)
+  if(sector==-1)
   {
     if(sym_.size()==1) return val_[0].eig(val, vec);
     qtensor<T> temp;
@@ -1149,8 +1286,12 @@ int qtensor<T>::eig(double* val, T* vec, int sector)
   for(int i=0;i<sym_.size();i++) if(sym_[i][0]==sector) loc = i;
   if(loc==-1)
   {
-    cerr << "Error in tensor_quantum eig: cannot find symmetry sector "
+    cerr << "Warning in tensor_quantum eig: cannot find symmetry sector "
          << sector << endl;
+    int d = dim_[0][sector];
+    for(int i=0;i<d;i++) val[i] = 0;
+    for(int i=0;i<d;i++) vec[i] = 0;
+    vec[0] = 1;
     return 0;
   }
   return val_[loc].eig(val, vec);

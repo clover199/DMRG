@@ -22,6 +22,11 @@ void print_matrix(const vector< vector<int> >& map)
 
 void print_energy(ofstream& data, int l ,int r, double* val, int n)
 {
+  cout.precision(ACC);
+  data.precision(ACC);
+  data.setf(std::ios::fixed);
+  data.setf(std::ios::showpoint);
+
   cout << "Energy:\n";
   for(int i=0;i<n;i++) cout << "  " << val[i] << endl;
   data << l << "\t" << r;
@@ -37,6 +42,11 @@ void print_energy(ofstream& data, int l ,int r, double* val, int n)
 
 void print_singular(ofstream& data, int l, int r, const vector<double>& s)
 {
+  cout.precision(ACC);
+  data.precision(ACC);
+  data.setf(std::ios::fixed);
+  data.setf(std::ios::showpoint);
+
   cout << "Singular value:\n";
   for(int i=0;i<s.size();i++) cout << "  " << s[i] << endl;
   double entropy = 0;

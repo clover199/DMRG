@@ -25,16 +25,27 @@ public:
     sites_ = sites;
     operators_.resize(1);
     operators_[0] = ham;
-    l_edge_ = ham;
-    r_edge_ = ham;
  }
-  
-  void update(const qtensor<T>& ham) {
-    operators_.push_back(ham);
-    r_edge_ = operators_[(sites_-1+operators_.size())%operators_.size()] ;
+ 
+  mpo(int sites) {
+    sites_ = sites;
+    operators_.resize(sites);
   }
 
-  int size() const {return sites_;}  
+  void update(const qtensor<T>& ham) {
+    operators_.push_back(ham);
+  }
+
+  int size() const { return sites_; }
+
+  void resize(int n) { operators_.resize(n); }
+
+  int num() const { return operators_.size(); }
+
+  void edge() {
+    l_edge_ = operators_[0].left();
+    r_edge_ = operators_[(sites_-1)%operators_.size()].right();
+  }
 
   void edge(const qtensor<T>& left, const qtensor<T>& right) {
     l_edge_ = left;
@@ -43,7 +54,7 @@ public:
 
   qtensor<T>& operator[](int n) {
     if(n==0) return l_edge_;
-	else if(n==sites_-1) return r_edge_;
+      else if(n==sites_-1) return r_edge_;
     else return operators_[n%operators_.size()];
   }
   

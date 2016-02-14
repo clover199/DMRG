@@ -69,6 +69,9 @@ public:
 
   tensor conjugate();
 
+  // convert the double tensor to complex
+  tensor< complex<double> > comp() const;
+
   // exchange the two indexes at positions a, b (start from 0)
   // for a two-tensor and a=0, b=1, this is just matrix transpose.
   tensor exchange(int a=0, int b=1) const;
@@ -88,6 +91,8 @@ public:
   
   // result = alpha * A + beta * B
   tensor& plus(const tensor& A, const tensor& B, T alpha=1, T beta=1);
+
+  T trace(tensor& A);
 
   tensor times(T alpha) const {
     tensor<T> ret = *this;

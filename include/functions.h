@@ -21,4 +21,13 @@ void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep,
 void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
           int cutoff, int sweep, int sector, const string& filename);
 
+template <typename T>
+T calc(mps<T>& my_mps);
+
+template <typename T>
+T calc(mps<T>& l_mps, mps<T>& r_mpo);
+
+template <typename T>
+T calc(mps<T>& my_mps, mpo<T>& my_mpo);
+
 #endif

@@ -38,6 +38,7 @@ public:
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
 
+  // only used for the 4-tensor MPO
   qtensor id() const;
 
 #ifdef FERMION
@@ -83,6 +84,9 @@ public:
 
   qtensor conjugate();
 
+  // conver the double qtensor to complex
+  qtensor<complex<double> > comp() const;  
+
   // remove the all-zero symmetry sectors
   qtensor simplify() const;
 
@@ -93,6 +97,15 @@ public:
   // transpose as a matrix with the first num indexes as left index
   // and the rest indexes as right index
   qtensor shift(int num=1) const;
+
+  // take the kth elements of index n
+  qtensor take(int n, int k) const;
+
+  // only used for the 4-tensor MPO
+  qtensor left() const;
+
+  // only used for the 4-tensor MPO
+  qtensor right() const;
     
   // combine the index from min to max (including max)
   // can only combine indexes with the same (or no) symmetries 
@@ -110,6 +123,8 @@ public:
   
   // result = alpha * A + beta * B
   qtensor& plus(const qtensor& A, const qtensor& B, T alpha=1, T beta=1);
+
+  T trace(qtensor& A, bool fermion=false);
   
   qtensor operator+(const qtensor& A) const {
     qtensor<T> ret;

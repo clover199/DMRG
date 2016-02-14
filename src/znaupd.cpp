@@ -163,7 +163,6 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 
     /* Before exiting, we copy the solution information over to the arrays of
        the calling program */
-
     complex<double> temp;
     for(int i=0; i<nev; i++) for (int j=i; j<nev; j++)
       if (d[j].real() < d[i].real())
@@ -178,7 +177,7 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
           v[j*n+k] = temp;
         }
       }
-    
+   
     for(int i=0;i<nev;i++) if(abs(d[i].imag())>1e-6)
       cerr << "Error in znaupd: eigenvalues not real. " << d[i] << endl;
     for (int i=0; i<nev; i++) Evals[i] = d[i].real();

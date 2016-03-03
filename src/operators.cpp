@@ -351,12 +351,12 @@ qtensor< complex<double> > H_Potts3(double f, double j, double p, double t)
 
 #ifdef FERMION
 // ******************************************************************
-// Kitaev chain: - T c^d_{i} c_{i+1} + P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}
+// Kitaev chain: T c^d_{i} c_{i+1} - P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}
 //
 //   MPO: I        0          0         0         c: 0 1     c^d: 0 0
 //        c        0          0         0            0 0          1 0
 //       c^d       0          0         0
-//      -2U*n   T*c^d-P*c   P*c^d-T*c    I
+//      -2U*n   T*c^d-P*c  P*c^d-T*c    I
 //
 // Where T is the hopping parameter and P is the pairing parameter
 
@@ -388,8 +388,17 @@ qtensor<double> H_Kitaev(double t, double p, double u)
   return ret;
 }
 
-qtensor<complex<double> > H_Kitaev(double t, complex<double> p, double u)
+qtensor<complex<double> > H_Kitaev(complex<double> t, complex<double> p, double u)
 {
+// T c^d_{i} c_{i+1} - P c_{i} c_{i+1}
+//
+//   MPO: I         0          0         0         c: 0 1     c^d: 0 0
+//        c         0          0         0            0 0          1 0
+//       c^d        0          0         0
+//      -2U*n   T*c^d-P*c Pz*c^d-Tz*c    I
+
+  complex<double> tz = conj(t);
+  complex<double> pz = conj(p);
   tensor<complex<double> > t00(4,1,4,1); // I
   t00.update(   1, 0,0,0,0);
   t00.update(   1, 3,0,3,0);
@@ -399,13 +408,13 @@ qtensor<complex<double> > H_Kitaev(double t, complex<double> p, double u)
   t11.update(   1, 3,0,3,0);
   tensor<complex<double> > t01(4,1,4,1); // c
   t01.update(   1, 1,0,0,0);
-  t01.update(   p, 3,0,1,0);
-  t01.update(   t, 3,0,2,0);
+  t01.update(  -p, 3,0,1,0);
+  t01.update( -tz, 3,0,2,0);
   tensor<complex<double> > t10(4,1,4,1); // c^d
   p = conj(p);
   t10.update(   1, 2,0,0,0);
-  t10.update(  -t, 3,0,1,0);
-  t10.update(  -p, 3,0,2,0);
+  t10.update(   t, 3,0,1,0);
+  t10.update(  pz, 3,0,2,0);
 
   qtensor<complex<double> > ret(1,2,1,2);
   ret.update(t00, 0,0,0,0);

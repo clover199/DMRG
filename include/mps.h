@@ -22,6 +22,8 @@ private:
   
 public:
 
+  mps() {cut_ = 0;}
+
   mps(const mpo<T>& in) {
     cut_ = 0;
     state_.resize(in.size()); 
@@ -31,32 +33,8 @@ public:
 #endif
   }
   
-  void print() const {
-    cout << "Print all MPS state: (cut=" << cut_ << ")\n";
-    for(int i=0;i<state_.size();i++)
-    {
-      cout << i << ": ";cout<<endl;
-      state_[i].print();
-      cout << endl;
-    }
-    cout << "Print all stored tensor" << endl;
-    for(int i=0;i<store_.size();i++)
-    {
-      cout << i << ": ";
-      store_[i].print();
-      cout << endl;
-    }
-#ifdef PBC
-    cout << "Print all edge tensor" << endl;
-    for(int i=0;i<edge_.size();i++)
-    {
-      cout << i << ": ";
-      edge_[i].print();
-      cout << endl;
-    }
-#endif
-  }
-  
+  void print() const;
+    
 #ifdef PBC
   void add_edge(const qtensor<T>& left, const qtensor<T>& right) {
     edge_[0] = left;
@@ -78,19 +56,12 @@ public:
 
   qtensor<double>& center(int n) { cut_ = n; return singular_; }
 
-  mps inverse() const {
-    mps<T> ret = *this;
-    int size = state_.size();
-    if(cut_!= size/2)
-    {
-      cout << "Error in mps inverse: cut=" << cut_ << " not in center.\n";
-      return ret;
-    }
-    for(int i=1;i<size-1;i++) ret.state_[size-1-i] = state_[i].exchange(0,2);
-    ret.state_[0] = state_[size-1].exchange(0,1);
-    ret.state_[size-1] = state_[0].exchange(0,1);
-    return ret;
-  }
-};
+  void prep_calc();
 
+  mps inverse() const;
+
+  void move_cut_left();
+  
+  void move_cut_right();
+};
 #endif

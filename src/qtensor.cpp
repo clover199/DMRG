@@ -127,6 +127,39 @@ qtensor<T> qtensor<T>::id() const
   return ret;
 }
 
+
+template <typename T>
+qtensor<T> qtensor<T>::id(const qtensor<T>& bulk_mpo) const
+{
+  qtensor<T> ret;
+  ret.dim_ = bulk_mpo.dim_;
+  ret.dim_[0] = dim_[1];
+  ret.dim_[2] = dim_[1];
+#ifdef FERMION
+  ret.dir_ = bulk_mpo.dir_;
+  ret.dir_[0] = dir_[1];
+  ret.dir_[2] = dir_[1];
+#endif
+  ret.sym_.clear();
+  ret.val_.clear();
+  vector<int> sym(ret.dim_.size(), 0);
+  tensor<T> temp;
+  vector< vector<int> > map;
+  for(int s0=0;s0<ret.dim_[0].size();s0++) for(int s1=0;s1<ret.dim_[1].size();s1++)
+  {
+    sym[0] = s0; sym[1] = s1;
+    sym[2] = s0; sym[3] = s1;
+    ret.sym_.push_back(sym);
+
+    temp = tensor<T> (ret.dim_[0][s0], ret.dim_[1][s1], ret.dim_[0][s0], ret.dim_[1][s1]);
+    generate_map(map, temp.index_);
+    for(int i=0;i<map.size();i++) if(map[i][0]==map[i][2] and map[i][1]==map[i][3])
+      temp.val_[i] = 1;
+    ret.val_.push_back(temp);
+  }
+  return ret;
+}
+
 		  
 #ifdef FERMION
 template <typename T>
@@ -768,7 +801,7 @@ T qtensor<T>::trace(qtensor& A, bool fermion)
   if( A.dim_ != dim_ )
   {
     cerr << "Error in tensor_quantum trace: "
-            "dimensions do not match.\n" ;
+            "dimensions do not match:\n";
     return 0.0;
   }
 #ifdef FERMION

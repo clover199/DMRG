@@ -15,10 +15,19 @@ vector<string> set_para_name(string s1="", string s2="", string s3="", string s4
 vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, int& sweep,
                             int& sector, vector<string>& para_name, string& filename);
 
-void dmrg(mps<double>& my_mps, mpo<double>& my_mpo, int cutoff, int sweep,
-          int sector, const string& filename);
+template <typename T>
+qtensor<T> combine_mpo(qtensor<T>& H1, qtensor<T>& H2);
 
-void dmrg(mps< complex<double> >& my_mps, mpo< complex<double> >& my_mpo,
+template <typename T>
+void init_dmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+template <typename T>
+void init_dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+template <typename T>
+void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
           int cutoff, int sweep, int sector, const string& filename);
 
 template <typename T>

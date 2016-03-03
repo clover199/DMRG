@@ -56,8 +56,8 @@ qtensor< complex<double> > H_Potts3(double f, double j, double p=0, double t=0);
 //   T c^d_{i} c_{i+1} - P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}
 
 #ifdef FERMION
-// qtensor<double> H_Kitaev(double t, double p, double u);
-qtensor<complex<double> > H_Kitaev(double t, complex<double> p, double u);
+qtensor<double> H_Kitaev(double t, double p, double u);
+qtensor<complex<double> > H_Kitaev(complex<double> t, complex<double> p, double u);
 #endif
 
 #endif

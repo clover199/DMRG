@@ -48,7 +48,7 @@ void print_singular(ofstream& data, int l, int r, const vector<double>& s)
   data.setf(std::ios::showpoint);
 
   cout << "Singular value:\n";
-  for(int i=0;i<s.size();i++) cout << "  " << s[i] << endl;
+  for(int i=0;i<s.size();i++) if(s[i]>TOL) cout << "  " << s[i] << endl;
   double entropy = 0;
   for(int i=0;i<s.size();i++) entropy += -s[i]*s[i]*log(s[i]*s[i]+TOL);
   cout << "Entropy: " << entropy << endl;

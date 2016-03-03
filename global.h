@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <ctime>
 
-//#define PBC
+#define PBC
 #define FERMION
 #define SYMMETRY 2
 

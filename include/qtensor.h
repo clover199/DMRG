@@ -26,6 +26,7 @@ private:
 #ifdef FERMION
   vector<int> dir_; // -1 means left, 1 means right, 0 meas not a physical index
 #endif
+
 public:
   // claim space with all elements as zero
   qtensor(int i0=0, int i1=0, int i2=0, int i3=0, 
@@ -40,6 +41,9 @@ public:
 
   // only used for the 4-tensor MPO
   qtensor id() const;
+
+  // only used for the 3-tensor MPO
+  qtensor id(const qtensor<T>& bulk_mpo) const;
 
 #ifdef FERMION
   void add_sign(int i0=2, int i1=2, int i2=2, int i3=2, 

@@ -5,7 +5,7 @@ MY_SRC = "./src"
 
 all: 
 	$(MAKE) -C $(MY_SRC) all
-	g++ -g 4e.cpp -I ./include/ -I ./\
+	g++ -g test.cpp -I ./include/ -I ./\
 		$(MY_SRC)/dgemm.o \
 		$(MY_SRC)/dgesvd.o \
 		$(MY_SRC)/dsaupd.o \
@@ -19,8 +19,8 @@ all:
 		$(MY_SRC)/functions.o \
 		$(MY_SRC)/useful.o \
 		$(MY_SRC)/operators.o \
-		$(MY_SRC)/dcore.o \
-		$(MY_SRC)/zcore.o \
+		$(MY_SRC)/mps.o \
+		$(MY_SRC)/core.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 %: %.cpp
@@ -39,8 +39,8 @@ all:
 		$(MY_SRC)/functions.o \
 		$(MY_SRC)/useful.o \
 		$(MY_SRC)/operators.o \
-		$(MY_SRC)/dcore.o \
-		$(MY_SRC)/zcore.o \
+		$(MY_SRC)/mps.o \
+		$(MY_SRC)/core.o \
 		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:

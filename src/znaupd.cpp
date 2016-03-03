@@ -51,6 +51,7 @@
 #include <iostream>
 #include <complex>
 #include <cmath>
+#include "val_for_lanczos.h"
 
 using namespace std;
 
@@ -71,8 +72,11 @@ extern "C" void zneupd_(int *rvec, char *All, int *select,
 			complex<double> *workl, int *lworkl,
 			double *rwork, int *ierr);
 
+template <typename T>
+void av(T *in, T *out, lanczos<T>& pass_val);
+
 void znaupd(int n, int nev, double *Evals, complex<double> *Evecs, 
-            void av(int n, complex<double> *in, complex<double> *out))
+            lanczos<complex<double> >& pass_val)
 {
   int ido = 0; /* Initialization of the reverse communication parameter. */
   char bmat = 'I'; /* Specifies that the right hand side matrix should be the identity matrix;
@@ -130,7 +134,7 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 	   &ncv, v, &ldv, iparam, ipntr, workd, workl,
 	   &lworkl, rwork, &info);
     
-   if ((ido==1)||(ido==-1)) av(n, workd+ipntr[0]-1, workd+ipntr[1]-1);
+   if ((ido==1)||(ido==-1)) av(workd+ipntr[0]-1, workd+ipntr[1]-1, pass_val);
   } while ((ido==1)||(ido==-1));
 
   /* From those results, the eigenvalues and vectors are extracted. */

@@ -2,7 +2,7 @@
 #define _MATRIX_PRODUCT_OPERATOR_
 
 #include "global.h"
-#include "tensor.h"
+#include "qtensor.h"
 
 template <typename T>
 class mpo
@@ -36,11 +36,11 @@ public:
     operators_.push_back(ham);
   }
 
-  int size() const { return sites_; }
+  int size() const { return sites_; }  // return the system size
 
   void resize(int n) { operators_.resize(n); }
 
-  int num() const { return operators_.size(); }
+  int num() const { return operators_.size(); }  // return the number of stored MPO
 
   void edge() {
     l_edge_ = operators_[0].left();

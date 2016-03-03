@@ -80,72 +80,192 @@ vector<double> set_para_val(int argc_, char *argv_[], int& sites, int& cutoff, i
 }
 
 
-// only used inside this file
-qtensor<double> connect(qtensor<double>& cent, qtensor<double>& right)
+template <typename T>
+qtensor<T> combine_mpo(qtensor<T>& H1, qtensor<T>& H2)
 {
-  qtensor<double> ret;
-  ret = cent * right;
+  qtensor<T> ret;
+  ret.contract(H1, 2, H2, 0);
+  ret = ret.exchange(4,5);
+  ret = ret.combine(4,5);
+  ret = ret.combine(1,2);
   return ret;
 }
+template qtensor<double> combine_mpo(qtensor<double>& H1, qtensor<double>& H2);
+template qtensor<complex<double> > combine_mpo(qtensor<complex<double> >& H1, qtensor<complex<double> >& H2);
 
 
-// only used inside this file
-qtensor<complex<double> > connect(qtensor<double>& cent, qtensor<complex<double> >& right)
+template <typename T>
+void two_sites(int size, int cutoff,
+               mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+void update_two(int l, int r, int cutoff,
+                mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+void move2right(int l, int r, int cutoff,
+                mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+void move2left(int l, int r, int cutoff,
+               mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+
+
+template <typename T>
+void init_dmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename)
 {
-  qtensor<complex<double> > ret;
-  ret = cent.comp() * right;
-  return ret;
+  int L = my_mps.size();
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+  
+  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
+  two_sites(L, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  for(int i=1;i<L/2;i++)
+  {
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-i << " <<<<<<<<<<\n";
+    move2right(i, L-i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    move2left(i, L-i-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  if(L%2)
+  {
+    cout << ">>>>>>>>>> starting l=" << L/2 << " r=" << L/2+1 << " >>>>>>>>>>\n";
+    move2right(L/2, L/2+1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+
+  data_energy.close();
+  data_singular.close();
 }
+template void init_dmrg1(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void init_dmrg1(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
 
 
-// only used inside this file
-qtensor<complex<double> > connect(qtensor<complex<double> >& left, qtensor<double>& cent)
+template <typename T>
+void init_dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename)
 {
-  qtensor<complex<double> > ret = cent.comp();
-  ret = left * ret;
-  return ret;
+  int L = my_mps.size();
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+  
+  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
+  two_sites(L, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  for(int i=1;i<L/2;i++)
+  {
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    update_two(i, L-i-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+
+  data_energy.close();
+  data_singular.close();
 }
+template void init_dmrg2(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void init_dmrg2(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+
+template <typename T>
+void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename)
+{
+  int L = my_mps.size();
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+
+  int pre_cutoff = 10;
+  int pre_sweep = cutoff/50;
+  
+  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
+  two_sites(L, cutoff*10, my_mps, my_mpo, sector, data_energy, data_singular);
+  for(int i=1;i<L/2;i++)
+  {
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  if(sweep!=-1) for(int i=L/2;i<L-1;i++)
+  {
+    cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  for(int s=0;s<sweep;s++)
+  {
+    for(int i=L-2;i>0;i--)
+    {
+      cout << "<<<<<<<<<< sweep=" << s+1
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+      move2left(i-1, i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+    for(int i=1;i<L-1;i++)
+    {
+      cout << ">>>>>>>>>> sweep=" << s+1
+           << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+      move2right(i, i+1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+  }
+  if(sweep!=-1) for(int i=L-2;i>=L/2;i--)
+  {
+    cout << "<<<<<<<<<< final l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+    move2left(i-1, i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  // I don't know why, but only adding this can make the MPS orthogonal
+//  move2right(L/2-1, L/2, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+
+
+  data_energy.close();
+  data_singular.close();
+}
+template void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void dmrg(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
 
 
 template <typename T>
 T calc(mps<T>& my_mps)
 {
-  int loc = my_mps.position();
   int sites = my_mps.size();
-  if(sites<0 or loc<0) return 0;
+  if(sites<2)
+  {
+    cerr << "Error in calc(mps): empty MPS.\n";
+    return 0;
+  }
 
   qtensor<T> left;
-  qtensor<T> right;
+  qtensor<T> end;
   qtensor<T> temp;
-  qtensor<T> store;
 
   temp = my_mps[0];
   temp.conjugate();
   left.contract(temp, my_mps[0], 'T', 'N', 1);
-  for(int i=1;i<loc;i++)
+  for(int i=1;i<sites-1;i++)
   {
-    store.contract(left, my_mps[i], 'N', 'N', 1);
     temp = my_mps[i];
+    end.contract(left, temp, 'N', 'N', 1);
     temp.conjugate();
-    left.contract(temp, store, 'T', 'N', 2);
+    left.contract(temp, end, 'T', 'N', 2);
   }
   temp = my_mps[sites-1];
   temp.conjugate();
-  right.contract(temp, my_mps[sites-1], 'N', 'T', 1);
-  for(int i=sites-2;i>loc;i--)
-  {
-    temp = my_mps[i];
-    temp.conjugate();
-    store.contract(temp, right, 'N', 'N', 1);
-    right.contract(store, my_mps[i], 'N', 'T', 2);
-  }
-  qtensor<double> singular = my_mps.center(loc);
-  temp = connect(singular, my_mps[loc]);
-  temp.conjugate();
-  store.contract(temp, right, 'N', 'N', 1);
-  temp.conjugate();
-  right.contract(store, temp, 'N', 'T', 2);
-  return left.trace(right);
+  end.contract(temp, my_mps[sites-1], 'N', 'T', 1);
+  return left.trace(end);
 }
 
 template double calc(mps<double>& my_mps);
@@ -155,37 +275,37 @@ template complex<double> calc(mps< complex<double> >& my_mps);
 template <typename T>
 T calc(mps<T>& l_mps, mps<T>& r_mps)
 {
-  if(l_mps.size()<=0 or r_mps.size()<=0) return 0;
-  if(l_mps.position()<=0 or r_mps.position()<=0) return 0;
   if(l_mps.size()!=r_mps.size())
   {
     cout << "Error in calc(mps, mps): sizes do not match: "
          << l_mps.size() << "!=" << r_mps.size() << endl;
     return 0;
   }
+  int sites = l_mps.size();
+  if(sites<2)
+  {
+    cerr << "Error in calc(mps, mps): empty MPS.\n";
+    return 0;
+  }
 
   qtensor<T> left;
   qtensor<T> temp;
-  qtensor<T> store;
+  qtensor<T> end;
 
   temp = r_mps[0];
   temp.conjugate();
   left.contract(temp, l_mps[0], 'T', 'N', 1);
-  for(int i=1;i<l_mps.size()-1;i++)
+  for(int i=1;i<sites-1;i++)
   {
-    if(i==l_mps.position()-1) temp = connect(l_mps[i], l_mps.center());
-    else temp = l_mps[i];
-    store.contract(left, temp, 'N', 'N', 1);
+    end.contract(left, l_mps[i], 'N', 'N', 1);
     temp = r_mps[i];
-    if(i==r_mps.position()-1) temp = connect(r_mps[i], r_mps.center());
-    else temp = r_mps[i];
     temp.conjugate();
-    left.contract(temp, store, 'T', 'N', 2);
+    left.contract(temp, end, 'T', 'N', 2);
   }
-  temp = r_mps[r_mps.size()-1];
+  temp = r_mps[sites-1];
   temp.conjugate();
-  store.contract(temp, l_mps[l_mps.size()-1], 'N', 'N', 1);
-  return left.trace(store);
+  end.contract(temp, l_mps[sites-1], 'N', 'T', 1);
+  return left.trace(end);
 }
 
 template double calc(mps<double>& l_mps, mps<double>& r_mps);
@@ -196,54 +316,42 @@ template complex<double> calc(mps< complex<double> >& l_mps,
 template <typename T>
 T calc(mps<T>& my_mps, mpo<T>& my_mpo)
 {
-  int loc = my_mps.position();
   int sites = my_mps.size();
-  if(sites<0 or loc<0) return 0;
+  if(sites!=my_mpo.size())
+  {
+    cout << "Error in calc(mps, mpo): sizes do not match: "
+         << sites << "!=" << my_mpo.size() << endl;
+    return 0;
+  }
+  if(sites<2)
+  {
+    cerr << "Error in calc(mps, mpo): empty MPS.\n";
+    return 0;
+  }
 
   qtensor<T> left;
-  qtensor<T> right;
+  qtensor<T> end;
   qtensor<T> temp;
-  qtensor<T> store;
 
-  store.contract(my_mpo[0], my_mps[0], 'N', 'N', 1);
-
+  end.contract(my_mpo[0], my_mps[0], 'N', 'N', 1);
   temp = my_mps[0];
   temp.conjugate();
-  left.contract(temp, store, 'T', 'N', 1);
-  for(int i=1;i<loc;i++)
+  left.contract(temp, end, 'T', 'N', 1);
+  for(int i=1;i<sites-1;i++)
   {
-    store.contract(left, 1, my_mpo[i], 0);
-    left = store.exchange(3,4);
-    store.contract(left, my_mps[i], 'N', 'N', 2);
+    end.contract(left, 1, my_mpo[i], 0);
+    left = end.exchange(3,4);
+    end.contract(left, my_mps[i], 'N', 'N', 2);
     temp = my_mps[i];
     temp.conjugate();
-    left.contract(temp, store, 'T', 'N', 2);
+    left.contract(temp, end, 'T', 'N', 2);
   }
+  qtensor<T> store;
   store.contract(my_mpo[sites-1], my_mps[sites-1], 'N', 'T', 1);
   temp = my_mps[sites-1];
   temp.conjugate();
-  right.contract(temp, store, 'N', 'N', 1);
-  for(int i=sites-2;i>loc;i--)
-  {
-    temp = my_mpo[i].exchange(0,2);
-    store.contract(right, 1, temp, 0, true);
-    right = store.exchange(0,1);
-    temp = my_mps[i];
-    temp.conjugate();
-    store.contract(temp, right, 'N', 'N', 2);
-    right.contract(store, my_mps[i], 'N', 'T', 2);
-  }
-  temp = my_mpo[loc].exchange(0,2);
-  store.contract(right, 1, temp, 0, true);
-  right = store.exchange(0,1);
-  qtensor<double> singular = my_mps.center(loc);
-  temp = connect(singular, my_mps[loc]);
-  temp.conjugate();
-  store.contract(temp, right, 'N', 'N', 2);
-  temp.conjugate();
-  right.contract(store, temp, 'N', 'T', 2);
-
-  return left.trace(right, true);
+  end.contract(temp, store, 'N', 'N', 1);
+  return left.trace(end, true);
 }
 
 template double calc(mps<double>& my_mps, mpo<double>& my_mpo);

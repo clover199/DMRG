@@ -38,7 +38,7 @@ tensor<T>::tensor(T* val,
   if(i6>0){ index_.push_back(i6);
   if(i7>0){ index_.push_back(i7); }}}}}}}}
   else cerr << "Error in tensor constructor: "
-               "The input for the first index is < 1.\n";
+               "The first index " << i0 << " should be non-zero.\n";
 
   int dim = dim_();
   val_.resize(dim);
@@ -51,7 +51,7 @@ void tensor<T>::update(T val,
                        int i0, int i1, int i2, int i3,
                        int i4, int i5, int i6, int i7)
 {
-  vector<int> loc; loc.clear();
+  vector<int> loc;
   if(i0>=0){ loc.push_back(i0);
   if(i1>=0){ loc.push_back(i1);
   if(i2>=0){ loc.push_back(i2);
@@ -61,25 +61,24 @@ void tensor<T>::update(T val,
   if(i6>=0){ loc.push_back(i6);
   if(i7>=0){ loc.push_back(i7);}}}}}}}}
   
-  if( loc.size() == index_.size() )
+  if( loc.size() != index_.size() )
   {
-    bool check = true;
-    for(int i=0;i<loc.size();i++) if(loc[i]>=index_[i])
-    {
-      cerr << "Error in tensor update: "
-              "The input " << i+1 << "th index " << loc[i] 
-           << " is out of range 0~" << index_[i]-1 << endl;
-      check = false;
-    }
-    if(check)
-    {
-      int j = 0;
-      for(int i=0;i<loc.size();i++) j = j*index_[i]+loc[i];
-	val_[j] = val;
-    }
+    cerr << "Error in tensor update: "
+	        "The number of input index " << loc.size() 
+         << " doesn't match this " << index_.size()
+         << "-tensor.\n";
+    return ;
   }
-  else
-    cerr << "Error in tensor update: The number of index doesn't match \n";
+
+  for(int i=0;i<loc.size();i++) if(loc[i]>=index_[i])
+  {
+    cerr << "Error in tensor update: "
+            "The input " << i+1 << "th index " << loc[i] 
+         << " is out of range 0~" << index_[i]-1 << endl;
+    return;
+  }
+  
+  val_[loc_(loc)] = val;
 }
 
 
@@ -103,13 +102,13 @@ template <typename T>
 void tensor<T>::print(bool all) const
 {
   cout.precision(10);
-  vector< vector<int> > map;
-  generate_map(map, index_);
   cout << "Print all non-zero values of the tensor:\n"
        << "dimension=(" << index_[0];
   for(int i=1;i<index_.size();i++) cout << ", " << index_[i];
   cout << ") size=" << val_.size() << "\n";
 
+  vector< vector<int> > map;
+  generate_map(map, index_);
   for(int i=0;i<val_.size();i++) if(all)
   {
     cout << "(" << map[i][0];
@@ -151,14 +150,14 @@ void tensor<T>::print_matrix() const
 
 
 template <>
-tensor<double> tensor<double>::conjugate()
+tensor<double>& tensor<double>::conjugate()
 {
   return *this;
 }
 
 
 template <>
-tensor< complex<double> > tensor< complex<double> >::conjugate()
+tensor< complex<double> >& tensor< complex<double> >::conjugate()
 {
   for(int i=0;i<val_.size();i++) val_[i] = std::conj(val_[i]);
   return *this;
@@ -198,28 +197,16 @@ tensor<T> tensor<T>::exchange(int a, int b) const
   ret.index_ = index_;
   ret.index_[a] = index_[b];
   ret.index_[b] = index_[a];
-
-  vector<int> TOP(8,1);
-  for(int i=0;i<index_.size();i++) TOP[i] = index_[i];
+  
   ret.val_.resize(val_.size());
-  vector<int> IND(8,0);
-  for(IND[0]=0;IND[0]<TOP[0];IND[0]++)
-  for(IND[1]=0;IND[1]<TOP[1];IND[1]++)
-  for(IND[2]=0;IND[2]<TOP[2];IND[2]++)
-  for(IND[3]=0;IND[3]<TOP[3];IND[3]++)
-  for(IND[4]=0;IND[4]<TOP[4];IND[4]++)
-  for(IND[5]=0;IND[5]<TOP[5];IND[5]++)
-  for(IND[6]=0;IND[6]<TOP[6];IND[6]++)
-  for(IND[7]=0;IND[7]<TOP[7];IND[7]++)
+  vector< vector<int> > map;
+  generate_map(map, ret.index_);
+  for(int i=0;i<map.size();i++)
   {
-    int loc1 = IND[0];
-    for(int i=1;i<index_.size();i++) loc1 = loc1*index_[i]+IND[i];
-    vector<int> index(IND);
-    index[a] = IND[b];
-    index[b] = IND[a];
-    int loc2 = index[0];
-    for(int i=1;i<index_.size();i++) loc2 = loc2*ret.index_[i]+index[i];
-    ret.val_[loc2] = val_[loc1];
+    int temp = map[i][a];
+    map[i][a] = map[i][b];
+    map[i][b] = temp;
+    ret.val_[i] = val_[loc_(map[i])];
   }
   return ret;
 }
@@ -240,26 +227,14 @@ tensor<T> tensor<T>::shift(int num) const
   for(int i=0;i<index_.size();i++)
     ret.index_[i] = index_[(i+num)%index_.size()];
 
-  vector<int> TOP(8,1);
-  for(int i=0;i<index_.size();i++) TOP[i] = index_[i];
   ret.val_.resize(val_.size());
-  vector<int> IND(8,0);
-  for(IND[0]=0;IND[0]<TOP[0];IND[0]++)
-  for(IND[1]=0;IND[1]<TOP[1];IND[1]++)
-  for(IND[2]=0;IND[2]<TOP[2];IND[2]++)
-  for(IND[3]=0;IND[3]<TOP[3];IND[3]++)
-  for(IND[4]=0;IND[4]<TOP[4];IND[4]++)
-  for(IND[5]=0;IND[5]<TOP[5];IND[5]++)
-  for(IND[6]=0;IND[6]<TOP[6];IND[6]++)
-  for(IND[7]=0;IND[7]<TOP[7];IND[7]++)
+  vector< vector<int> > map;
+  generate_map(map, ret.index_);
+  vector<int> index(index_.size(),0);
+  for(int i=0;i<map.size();i++)
   {
-    int loc1 = IND[0];
-    for(int i=1;i<index_.size();i++) loc1 = loc1*index_[i]+IND[i];
-    vector<int> index(IND);
-    for(int i=0;i<index_.size();i++) index[i] = IND[(i+num)%index_.size()];
-    int loc2 = index[0];
-    for(int i=1;i<index_.size();i++) loc2 = loc2*ret.index_[i]+index[i];
-    ret.val_[loc2] = val_[loc1];
+    for(int j=0;j<index.size();j++) index[j] = map[i][(j+num)%index_.size()];
+    ret.val_[i] = val_[loc_(index)];
   }
   return ret;
 }
@@ -313,44 +288,31 @@ tensor<T>& tensor<T>::combine(int min, int max)
 
 
 template <typename T>
-tensor<T> tensor<T>::resize(int index, int cutoff) const
+tensor<T> tensor<T>::resize(int k, int n) const
 {
-  if( index>=index_.size() or index<0)
+  if( k>=index_.size() or k<0)
   {
-    cerr << "Error in tensor cutoff: The input index number "
-         << index << " is out of range 0~" << index_.size()-1 << endl;
+    cerr << "Error in tensor resize: The input index number "
+         << k << " is out of range 0~" << index_.size()-1 << endl;
     return *this;
   }
   
-  int d = 1;
-  for(int i=0;i<index_.size();i++) d *= index_[i];
-  if(d==0) return *this;
+  int d = dim_();
+  if(d==0)
+  {
+    cerr<< "Error in tensor resize: empty tensor.\n";
+    return *this;
+  }
 
   tensor<T> ret;
   ret.index_ = index_;
-  ret.index_[index] = cutoff;
-
-  vector<int> TOP(8,1);
-  for(int i=0;i<index_.size();i++) TOP[i] = ret.index_[i];
-  if(index_[index]<ret.index_[index]) TOP[index] = index_[index];
-  ret.val_.resize( val_.size() * ret.index_[index] / index_[index] );
-  for(int i=0;i<ret.val_.size();i++) ret.val_[i] = 0;
-  vector<int> IND(8,0);
-  for(IND[0]=0;IND[0]<TOP[0];IND[0]++)
-  for(IND[1]=0;IND[1]<TOP[1];IND[1]++)
-  for(IND[2]=0;IND[2]<TOP[2];IND[2]++)
-  for(IND[3]=0;IND[3]<TOP[3];IND[3]++)
-  for(IND[4]=0;IND[4]<TOP[4];IND[4]++)
-  for(IND[5]=0;IND[5]<TOP[5];IND[5]++)
-  for(IND[6]=0;IND[6]<TOP[6];IND[6]++)
-  for(IND[7]=0;IND[7]<TOP[7];IND[7]++)
-  {
-    int loc1 = IND[0];
-    for(int i=1;i<index_.size();i++) loc1 = loc1*index_[i]+IND[i];
-    int loc2 = IND[0];
-    for(int i=1;i<index_.size();i++) loc2 = loc2*ret.index_[i]+IND[i];
-    ret.val_[loc2] = val_[loc1];
-  }
+  ret.index_[k] = n;
+  
+  vector< vector<int> > map;
+  generate_map(map, ret.index_);
+  ret.val_.resize(map.size());
+  for(int i=0;i<map.size();i++) if(map[i][k]<index_[k])
+    ret.val_[i] = val_[loc_(map[i])];
   return ret;
 }
 
@@ -359,18 +321,15 @@ template <typename T>
 tensor<T>& tensor<T>::plus(const tensor& A, const tensor& B,
                             T alpha, T beta)
 {
-  if( A.index_.size() - B.index_.size() )
+  if( A.index_ != B.index_ )
   {
-    cerr << "Error in tensor plus: Number of indexes doesn't match. "
-         << A.index_.size() << "!=" << B.index_.size() << endl;
-    return *this;
-  }
-
-  int diff = 0;
-  for(int i=0;i<A.index_.size();i++) diff += (A.index_[i]-B.index_[i]);
-  if(diff)
-  {
-    cerr << "Error in tensor plus: The indexes are not the same.\n";
+    cerr << "Error in tensor plus: dimension doesn't match.\n A: ";
+    for(int i=0;i<A.index_.size();i++)
+      cerr << A.index_[i] << " ";
+    cerr << endl << "B: ";
+    for(int i=0;i<B.index_.size();i++)
+      cerr << B.index_[i] << " ";
+    cerr << endl;
     return *this;
   }
   

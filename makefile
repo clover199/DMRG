@@ -1,47 +1,36 @@
 LAPACK_PATH = "/usr/lib"
 ARPACK_PATH = "/home/y/lib/ARPACK"
 
-MY_SRC = "./src"
+CC = g++
+
+FLAGS =
+
+OBJS = dgemm.o dgesvd.o dsaupd.o dsyev.o \
+	zgemm.o zgesvd.o zheev.o  znaupd.o \
+	tensor.o qtensor.o mps.o useful.o core.o functions.o operators.o
+
+MKL = N
+
+ifeq ($(MKL),Y)
+CC = icc
+FLAGS = -mkl
+OBJS = dgemm_p.o dgesvd.o dsaupd.o dsyev.o \
+	zgemm_p.o zgesvd.o zheev.o  znaupd.o \
+	tensor.o qtensor.o mps.o useful.o core.o functions.o operators.o
+endif
+
+MY_SRC = ./src
+MY_HEAD = -I ./include/ -I ./
+
+PATH_OBJS = $(addprefix $(MY_SRC)/, $(OBJS))
 
 all: 
-	$(MAKE) -C $(MY_SRC) all
-	g++ -g test.cpp -I ./include/ -I ./\
-		$(MY_SRC)/dgemm.o \
-		$(MY_SRC)/dgesvd.o \
-		$(MY_SRC)/dsaupd.o \
-		$(MY_SRC)/dsyev.o \
-		$(MY_SRC)/zgemm.o \
-		$(MY_SRC)/zgesvd.o \
-		$(MY_SRC)/zheev.o \
-		$(MY_SRC)/znaupd.o \
-		$(MY_SRC)/tensor.o \
-		$(MY_SRC)/qtensor.o \
-		$(MY_SRC)/functions.o \
-		$(MY_SRC)/useful.o \
-		$(MY_SRC)/operators.o \
-		$(MY_SRC)/mps.o \
-		$(MY_SRC)/core.o \
-		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
+	$(MAKE) -C $(MY_SRC) CC=$(CC) FLAGS=$(FLAGS) $(OBJS)
+	$(CC) $(FLAGS) test.cpp $(PATH_OBJS) $(MY_HEAD) -L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 %: %.cpp
-	$(MAKE) -C $(MY_SRC) all
-	g++ $< -I ./include/ -I./ -o $@.out\
-		$(MY_SRC)/dgemm.o \
-		$(MY_SRC)/dgesvd.o \
-		$(MY_SRC)/dsaupd.o \
-		$(MY_SRC)/dsyev.o \
-		$(MY_SRC)/zgemm.o \
-		$(MY_SRC)/zgesvd.o \
-		$(MY_SRC)/zheev.o \
-		$(MY_SRC)/znaupd.o \
-		$(MY_SRC)/tensor.o \
-		$(MY_SRC)/qtensor.o \
-		$(MY_SRC)/functions.o \
-		$(MY_SRC)/useful.o \
-		$(MY_SRC)/operators.o \
-		$(MY_SRC)/mps.o \
-		$(MY_SRC)/core.o \
-		-L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
+	$(MAKE) -C $(MY_SRC) CC=$(CC) FLAGS=$(FLAGS) $(OBJS)
+	$(CC) $(FLAGS) $< $(PATH_OBJS) $(MY_HEAD) -o $@.out -L$(LAPACK_PATH) -llapack -L$(ARPACK_PATH) -larpack -lblas
 
 clean:
 	rm -rf *.o *.txt

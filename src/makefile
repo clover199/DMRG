@@ -1,10 +1,10 @@
 SOURCES = $(wildcard *.cpp)
-OBJECTS = $(subst .cpp,.o,$(SOURCES))
+OBJECTS = $(SOURCES, .cpp=.o)
 
 all: $(OBJECTS)
 
 %.o: %.cpp
-	g++ -c $< -I ../include/ -I ../
+	$(CC) $(FLAGS) -c $< -I ../include/ -I ../
 
 clean:
 	rm -rf *.o all

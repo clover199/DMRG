@@ -3,11 +3,14 @@
 
 #include "global.h"
 
-// Attention: the constructor function and functions:
-// 'exchange', 'transpose', 'cut'
-// can only accept at most 8 indexes
+/* Attention: the constructor function and functions:
+     'exchange', 'transpose', 'cut'
+   can only accept at most 8 indexes */
 
-// T = 'double', 'complex<double>'
+/* A q-tensor has the form
+     A[i0,i1,i2,...,iq]
+   with i0, i1, i2, ..., iq as it's index number.
+   T = 'double', 'complex<double>' */
 
 template <typename T> 
 class tensor
@@ -16,33 +19,40 @@ class tensor
   template <typename> friend class qtensor;
 
 private:
-  vector<int> index_;
-  vector< T > val_;
+  vector<int> index_;  /* dimension of each index */
+  vector< T > val_;  /* values of the tensor rearranged as an array*/
   
   inline T* begin() { return &*val_.begin(); }
   
-  int dim_() {
+  int dim_() const {
     if(index_.size()==0) return 0;
     int ret = 1;
     for(int i=0;i<index_.size();i++) ret *= index_[i];
     return ret;
   }
-	
+
+  int loc_(const vector<int>& in) const {
+    if(in.size()!=index_.size()) return 0;
+    int ret = 0;
+    for(int i=0;i<in.size();i++) ret = ret*index_[i]+in[i];
+    return ret;
+  }
 public:
-  // claim space with all elements as zero
+  /* claim space with all elements as zero */
   tensor(int i0=0, int i1=0, int i2=0, int i3=0, 
          int i4=0, int i5=0, int i6=0, int i7=0);
 		 
-  // creat tensor with input values
+  /* create tensor with input values */
   tensor(T* val,
-         int i0, int i1=0, int i2=0, int i3=0, 
+         int i0,   int i1=0, int i2=0, int i3=0, 
          int i4=0, int i5=0, int i6=0, int i7=0);
 
+  /* assign value to a particular member */ 
   void update(T val,
-              int i0, int i1=-1, int i2=-1, int i3=-1, 
-              int i4=-1, int i5=-1, int i6=-1, int i7=-1);
+        int i0,    int i1=-1, int i2=-1, int i3=-1, 
+        int i4=-1, int i5=-1, int i6=-1, int i7=-1);
 
-  // assign random values to the tensor
+  /* assign random values to the tensor */
   void rand();
 
   int index() const {return index_.size();}
@@ -67,42 +77,44 @@ public:
     }
   }
 
-  tensor conjugate();
+  /* changes the original tensor */
+  tensor& conjugate();
 
-  // convert the double tensor to complex
-  tensor< complex<double> > comp() const;
+  /* convert the double tensor to complex */
+  tensor<complex<double> > comp() const;
 
-  // exchange the two indexes at positions a, b (start from 0)
-  // for a two-tensor and a=0, b=1, this is just matrix transpose.
+  /* exchange the two indexes at positions a, b (start from 0) for
+     a two-tensor and a=0, b=1, this is just matrix transpose. */
   tensor exchange(int a=0, int b=1) const;
 
-  // transpose as a matrix with the first num indexes as left index
-  // and the rest indexes as right index
+  /* transpose as a matrix with the first num indexes as left
+     indexes and the rest indexes as right index */
   tensor shift(int num=1) const;
   
-  // create a num-tensor with only diagonal elements non-zero
+  /* turn to a num-tensor with only diagonal elements non-zero 
+     the tensor has dimension min for all indexes */
   tensor& diag(int num=1);
   
-  // combine the index from min to max (including max)
+  /* combine the index from min to max (including min and max) */
   tensor& combine(int min=0, int max=1);
   
-  // retain 'cut' number of index 'index'
-  tensor resize(int index, int cutoff) const;
+  /* resize index k to be size n */
+  tensor resize(int k, int n) const;
   
   // result = alpha * A + beta * B
   tensor& plus(const tensor& A, const tensor& B, T alpha=1, T beta=1);
+  
+  tensor operator+(const tensor& A) const {
+    tensor<T> ret;
+    ret.plus(*this, A);
+    return ret;
+  }
 
   T trace(tensor& A);
 
   tensor times(T alpha) const {
     tensor<T> ret = *this;
     for(int i=0;i<val_.size();i++) ret.val_[i] *= alpha;
-    return ret;
-  }
-  
-  tensor operator+(const tensor& A) const {
-    tensor<T> ret;
-    ret.plus(*this, A);
     return ret;
   }
   

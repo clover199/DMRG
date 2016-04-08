@@ -51,6 +51,12 @@ qtensor<double> H_Potts2(double h, double j);
 qtensor< complex<double> > H_Potts3(double f, double j, double p=0, double t=0);
 
 // ******************************************************************
+// XYZ Chain: Jx Sx_{i} Sx_{i+1} + Jy Sy_{i} Sy_{i+1} + Jz Sz_{i} Sz_{i+1}
+//   spin 1/2
+
+qtensor<complex<double> > H_XYZ(double Jx, double Jy, double Jz);
+
+// ******************************************************************
 // Kitaev chain: - i u a_{j} b_{j} - i v b_{j] a_{j+1}
 //   u=2U, v=T=P:
 //   T c^d_{i} c_{i+1} - P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}

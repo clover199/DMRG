@@ -33,6 +33,14 @@ public:
 #endif
   }
   
+  void clear(int i) {
+    state_[i].clear();
+    store_[i].clear();
+#ifdef PBC
+    edge_[i].clear();
+#endif
+  }
+
   void print() const;
     
 #ifdef PBC

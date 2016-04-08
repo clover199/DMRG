@@ -19,16 +19,32 @@ template <typename T>
 qtensor<T> combine_mpo(qtensor<T>& H1, qtensor<T>& H2);
 
 template <typename T>
+void ed(mps<T>& my_mps, mpo<T>& my_mpo,
+        int cut, int swp, int sector, const string& filename);
+/*
+template <typename T>
 void init_dmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
+                int cutoff, int sweep, int sector, const string& filename);
 
 template <typename T>
 void init_dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
+                int cutoff, int sweep, int sector, const string& filename);*/
 
 template <typename T>
 void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
           int cutoff, int sweep, int sector, const string& filename);
+
+template <typename T>
+void dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
+           int cutoff, int sweep, int sector, const string& filename);
+
+template <typename T>
+void idmrg(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+template <typename T>
+void idmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
+           int cutoff, int sweep, int sector, const string& filename);
 
 template <typename T>
 T calc(mps<T>& my_mps);

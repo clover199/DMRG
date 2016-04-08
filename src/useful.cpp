@@ -28,7 +28,8 @@ void print_energy(ofstream& data, int l ,int r, double* val, int n)
   data.setf(std::ios::showpoint);
 
   cout << "Energy:\n";
-  for(int i=0;i<n;i++) cout << "  " << val[i] << endl;
+  if(PRINT_TO_SCREEN) for(int i=0;i<n;i++) cout << "  " << val[i] << endl;
+  else cout << val[0] << endl;
   data << l << "\t" << r;
   if(NEV<=n) for(int i=0;i<NEV;i++) data << "\t" << val[i];
   else
@@ -40,15 +41,18 @@ void print_energy(ofstream& data, int l ,int r, double* val, int n)
 }
 
 
-void print_singular(ofstream& data, int l, int r, const vector<double>& s)
+void print_singular(ofstream& data, int l, int r, const vector<double>& s, int cutoff)
 {
   cout.precision(ACC);
   data.precision(ACC);
   data.setf(std::ios::fixed);
   data.setf(std::ios::showpoint);
 
-  cout << "Singular value:\n";
-  for(int i=0;i<s.size();i++) if(s[i]>TOL) cout << "  " << s[i] << endl;
+  if(PRINT_TO_SCREEN)
+  {
+    cout << "Singular value:\n";
+    for(int i=0;i<s.size();i++) if(s[i]>TOL) cout << "  " << s[i] << endl;
+  }
   double entropy = 0;
   for(int i=0;i<s.size();i++) entropy += -s[i]*s[i]*log(s[i]*s[i]+TOL);
   cout << "Entropy: " << entropy << endl;
@@ -59,7 +63,11 @@ void print_singular(ofstream& data, int l, int r, const vector<double>& s)
     for(int i=0;i<s.size();i++) data << "\t" << s[i];
     for(int i=s.size();i<NSI;i++) data << "\t" << 0;
   }
-  data << endl;
+  double error = 1;
+  cutoff = s.size() < cutoff ? s.size() : cutoff;
+  for(int i=0;i<cutoff;i++) error -= s[i]*s[i];
+  cout << "Truncation error: " << error << endl;
+  data << "\t" << error << endl;
 }
 
 
@@ -84,13 +92,13 @@ void generate_map(vector< vector<int> >& map, const vector<int>& index)
   map.resize(dim);
   for(int i=0;i<dim;i++) map[i].resize(index.size());
   int count = 1;  // the periodicity of the symmetry for the index i
-  for(int i=0;i<index.size();i++)
+  for(int i=0;i<index.size();i++)  // loop over each index
   {
-    for(int p=0;p<count;p++)
-      for(int s=0;s<index[i];s++)
+    for(int p=0;p<count;p++)  // loop over each period. for index i, we have p(i) periods
+      for(int s=0;s<index[i];s++)  // loop over index within periods
         for(int k=0;k<dim/count/index[i];k++)
-          map[k+s*dim/count/index[i]+p*dim/count][i] = s;
-    count *= index[i];
+          map[k+s*(dim/count/index[i])+p*(dim/count)][i] = s;
+    count *= index[i];  // p(i+1) = p(i) * index[i]
   }
 }
 

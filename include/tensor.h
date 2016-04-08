@@ -5,11 +5,12 @@
 
 /* Attention: the constructor function and functions:
      'exchange', 'transpose', 'cut'
-   can only accept at most 8 indexes */
+   can only accept at most 8 indexes 
 
-/* A q-tensor has the form
-     A[i0,i1,i2,...,iq]
-   with i0, i1, i2, ..., iq as it's index number.
+   A q-tensor has the form:
+       A[i0,i1,i2,...,iq]
+   with i0, i1, i2, ..., iq as its index number.
+   
    T = 'double', 'complex<double>' */
 
 template <typename T> 
@@ -77,6 +78,14 @@ public:
     }
   }
 
+  void write_file(fstream& name) const;
+
+  void read_file(fstream& name);
+
+  void write_file(ofstream& name) const;
+
+  void read_file(ifstream& name);
+
   /* changes the original tensor */
   tensor& conjugate();
 
@@ -101,7 +110,7 @@ public:
   /* resize index k to be size n */
   tensor resize(int k, int n) const;
   
-  // result = alpha * A + beta * B
+  /* returns: alpha * A + beta * B */
   tensor& plus(const tensor& A, const tensor& B, T alpha=1, T beta=1);
   
   tensor operator+(const tensor& A) const {
@@ -118,37 +127,38 @@ public:
     return ret;
   }
   
-  // contract tensor A and B with the num left/right most index
-  // the result is added to the original tensor (if not empty);
+  /* contract tensor A and B with the num left/right most index
+     if cover = false: the result is added to the original tensor
+     if cover = true: the result covers the original tensor. */
   tensor& contract(tensor& A, tensor& B, char transa='N', char transb='N',
                    int num=1, bool cover=false);
   
   tensor operator*(tensor& A) {
     tensor<T> ret;
-    ret.contract(*this, A);
+    ret.contract(*this, A, 'N', 'N', 1, true);
     return ret;
   }
   
-  // contract index a of tensor A with index b of tensor B
-  // the final index has the form
-  // A0 A1 A2 ... Aa-1 B0 B1 ... Bm Aa+1 ... An
-  // if cover = false, the result tensor will be added to the original one
-  // if cover = true, the original tensor will be destroyed.
+  /* contract index a of tensor A with index b of tensor B
+     returns: A*B*sign
+     the final index has the form:
+         A0 A1 A2 ... Aa-1 B0 B1 ... Bm Aa+1 ... An
+     if cover = false, the result tensor will be added to the original one
+     if cover = true, the original tensor will be destroyed. */
   tensor& contract(const tensor& A, int a, const tensor& B, int b,
                    bool cover=false, double sign = 1);
   
-  // multiply the tensor by an array (as a matrix)
-  // only multiply the 'num' left/right most index
-  // for the array, use the same notation as matrix multiplication
-  // beta=0 will erase the original data in out
-  // bata=1 will add the result to the original data in out
+  /* multiply the tensor A by an array 'in' (as a matrix)
+     only multiply the 'num' left/right most index
+     for the array, use the same notation as matrix multiplication
+     returns:  out = alpha * A * in + beta * out  */
   void contract(T* out, T* in, int row, int col,
                 char transa='N', char transb='N', int num=1,
                 double beta=0, double alpha=1);
   
-  // SVD between first num and the rest indexes
-  // A = U * S * V
-  // returns the number of singular values (length of S)
+  /* SVD between first num and the rest indexes
+         A = U * S * V
+     returns the number of singular values (length of S) */
   int svd(tensor& U, tensor<double>& S, tensor& V, int num=1);
 
   int eig(double* val, T* vec);

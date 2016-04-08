@@ -13,7 +13,7 @@ void print_matrix(const vector< vector<int> >& map);
 
 void print_energy(ofstream& data, int l ,int r, double* val, int n=NEV);
 
-void print_singular(ofstream& data, int l, int r, const vector<double>& s);
+void print_singular(ofstream& data, int l, int r, const vector<double>& s, int cutoff);
 
 void generate_map(vector< vector<int> >& map, const vector<int>& index);
 

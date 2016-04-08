@@ -94,27 +94,18 @@ template qtensor<double> combine_mpo(qtensor<double>& H1, qtensor<double>& H2);
 template qtensor<complex<double> > combine_mpo(qtensor<complex<double> >& H1, qtensor<complex<double> >& H2);
 
 
+
 template <typename T>
-void two_sites(int size, int cutoff,
-               mps<T>& my_mps, mpo<T>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
+void two_sites(int l, int r, mps<T>& my_mps, int sector, 
+               ofstream& data_energy, ofstream& data_singular);
 template <typename T>
-void update_two(int l, int r, int cutoff,
-                mps<T>& my_mps, mpo<T>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
+void grow2right(int l, mps<T>& my_mps, mpo<T>& my_mpo);
 template <typename T>
-void move2right(int l, int r, int cutoff,
-                mps<T>& my_mps, mpo<T>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
-template <typename T>
-void move2left(int l, int r, int cutoff,
-               mps<T>& my_mps, mpo<T>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
+void grow2left(int r, mps<T>& my_mps, mpo<T>& my_mpo);
 
 
 template <typename T>
-void init_dmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename)
+void ed(mps<T>& my_mps, mpo<T>& my_mpo, int cut, int swp, int sector, const string& filename)
 {
   int L = my_mps.size();
 
@@ -123,58 +114,44 @@ void init_dmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
   data_energy.open(name.c_str());
   name = "singular"+filename;
   data_singular.open(name.c_str());
+
   
-  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
-  two_sites(L, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
-  for(int i=1;i<L/2;i++)
+  for(int i=0;i<L/2;i++)
   {
-    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-i << " <<<<<<<<<<\n";
-    move2right(i, L-i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
-    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
-    move2left(i, L-i-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    grow2right(i, my_mps, my_mpo);
+    grow2left(L-i-1, my_mps, my_mpo);
   }
   if(L%2)
-  {
-    cout << ">>>>>>>>>> starting l=" << L/2 << " r=" << L/2+1 << " >>>>>>>>>>\n";
-    move2right(L/2, L/2+1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
-  }
+    grow2left(L/2, my_mps, my_mpo);
+  cout << "********** Calculating (L=" << L << ")... **********\n";
+  two_sites(L/2-1, L/2, my_mps, sector, data_energy, data_singular);
 
   data_energy.close();
   data_singular.close();
 }
-template void init_dmrg1(mps<double>& my_mps, mpo<double>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
-template void init_dmrg1(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
+template void ed(mps<double>& my_mps, mpo<double>& my_mpo,
+                 int cut, int swp, int sector, const string& filename);
+template void ed(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+                 int cut, int swp, int sector, const string& filename);
+
 
 
 template <typename T>
-void init_dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename)
-{
-  int L = my_mps.size();
-
-  ofstream data_energy, data_singular;
-  string name = "energy"+filename;
-  data_energy.open(name.c_str());
-  name = "singular"+filename;
-  data_singular.open(name.c_str());
-  
-  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
-  two_sites(L, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
-  for(int i=1;i<L/2;i++)
-  {
-    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
-    update_two(i, L-i-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
-  }
-
-  data_energy.close();
-  data_singular.close();
-}
-template void init_dmrg2(mps<double>& my_mps, mpo<double>& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
-template void init_dmrg2(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
-          int cutoff, int sweep, int sector, const string& filename);
+double two_sites(int l, int r, int cutoff,
+               mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+double update_two(int l, int r, int cutoff,
+                mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+double move2right(int l, int r, int cutoff,
+                mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
+template <typename T>
+double move2left(int l, int r, int cutoff,
+               mps<T>& my_mps, mpo<T>& my_mpo,
+               int sector, ofstream& data_energy, ofstream& data_singular);
 
 
 template <typename T>
@@ -190,10 +167,11 @@ void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
   data_singular.open(name.c_str());
 
   int pre_cutoff = 10;
-  int pre_sweep = cutoff/50;
+  if(sweep==-1) pre_cutoff = cutoff;
+  int pre_sweep = cutoff/100;
   
   cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
-  two_sites(L, cutoff*10, my_mps, my_mpo, sector, data_energy, data_singular);
+  two_sites(0, L-1, cutoff*10, my_mps, my_mpo, sector, data_energy, data_singular);
   for(int i=1;i<L/2;i++)
   {
     cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
@@ -203,6 +181,21 @@ void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
   {
     cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
     move2right(i, i+1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  if(sweep!=-1) for(int s=0;s<pre_sweep-1;s++)
+  {
+    for(int i=L-2;i>0;i--)
+    {
+      cout << "<<<<<<<<<< pre-sweep: cutoff=" << 100*(s+1)
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+      move2left(i-1, i, 100*(s+1), my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+    for(int i=1;i<L-1;i++)
+    {
+      cout << ">>>>>>>>>> pre-sweep: cutoff=" << 100*(s+1)
+           << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+      move2right(i, i+1, 100*(s+1), my_mps, my_mpo, sector, data_energy, data_singular);
+    }
   }
   for(int s=0;s<sweep;s++)
   {
@@ -234,6 +227,165 @@ void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
 template void dmrg(mps<double>& my_mps, mpo<double>& my_mpo,
           int cutoff, int sweep, int sector, const string& filename);
 template void dmrg(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+
+template <typename T>
+void dmrg2(mps<T>& my_mps, mpo<T>& my_mpo,
+           int cutoff, int sweep, int sector, const string& filename)
+{
+  int L = my_mps.size();
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+
+  int pre_cutoff = 10;
+  if(sweep==-1) pre_cutoff = cutoff;
+  int pre_sweep = cutoff/100;
+
+  cout << "********** starting l=" << 0 << " r=" << L-1 << " **********\n";
+  two_sites(0, L-1, 0, my_mps, my_mpo, sector, data_energy, data_singular);
+  for(int i=1;i<L/2;i++)
+  {
+    cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
+    update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  if(sweep!=-1) for(int i=L/2;i<L-2;i++)
+  {
+    cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+    update_two(i, i+1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  if(sweep!=-1) for(int s=0;s<pre_sweep-1;s++)
+  {
+    for(int i=L-3;i>1;i--)
+    {
+      cout << "<<<<<<<<<< pre-sweep: cutoff=" << 100*(s+1)
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+      update_two(i-1, i, 100*(s+1), my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+    for(int i=2;i<L-2;i++)
+    {
+      cout << ">>>>>>>>>> pre-sweep: cutoff=" << 100*(s+1)
+           << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+      update_two(i, i+1, 100*(s+1), my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+  }
+  for(int s=0;s<sweep;s++)
+  {
+    for(int i=L-3;i>1;i--)
+    {
+      cout << "<<<<<<<<<< sweep=" << s+1
+           << " l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+      update_two(i-1, i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+    for(int i=2;i<L-2;i++)
+    {
+      cout << ">>>>>>>>>> sweep=" << s+1
+           << " l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
+      update_two(i, i+1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    }
+  }
+  if(sweep!=-1) for(int i=L-3;i>=L/2;i--)
+  {
+    cout << "<<<<<<<<<< final l=" << i-1 << " r=" << i << " <<<<<<<<<<\n";
+    update_two(i-1, i, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  }
+  data_energy.close();
+  data_singular.close();
+}
+template void dmrg2(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void dmrg2(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+
+
+
+template <typename T>
+void idmrg(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename)
+{
+  int L = my_mps.size();
+  double ene = 0;
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+  
+  cout << "********** L=" << 2 << " **********\n";
+  ene = two_sites(0, L-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  ene = ene/2;
+  int l = 1;
+  double diff = 1;
+  while(l<L/2 and abs(diff)>TOL*100)
+  {
+    double store = 0;
+    cout << ">>>>>>>>>>> L=" << l*2+2 << " <<<<<<<<<<\n";
+    store = update_two(l, L-l-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    store = store / (l*2+2);
+    my_mps.clear(l-1);
+    my_mps.clear(L-l);
+    diff = ene - store;
+    cout << "Energy difference: " << diff << endl;
+    ene = store;
+    l++;
+  }
+
+  data_energy.close();
+  data_singular.close();
+}
+template void idmrg(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void idmrg(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+
+
+
+
+template <typename T>
+void idmrg1(mps<T>& my_mps, mpo<T>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename)
+{
+  int L = my_mps.size();
+  double ene = 0;
+
+  ofstream data_energy, data_singular;
+  string name = "energy"+filename;
+  data_energy.open(name.c_str());
+  name = "singular"+filename;
+  data_singular.open(name.c_str());
+  
+  cout << "********** L=" << 2 << " **********\n";
+  ene = two_sites(0, L-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+  int l = 1;
+  double diff = 1;
+  while(l<L/2 and abs(diff)>TOL)
+  {
+    double store = 0;
+    cout << ">>>>>>>>>>> L=" << l*2+1 << " <<<<<<<<<<\n";
+    move2left(l-1, L-l-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    my_mps.clear(L-l);
+    cout << ">>>>>>>>>>> L=" << l*2+2 << " <<<<<<<<<<\n";
+    store = move2right(l, L-l-1, cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
+    store = store / (l*2+2);
+    my_mps.clear(l-1);
+    diff = ene - store;
+    cout << "Energy difference: " << diff << endl;
+    ene = store;
+    l++;
+  }
+
+  data_energy.close();
+  data_singular.close();
+}
+template void idmrg1(mps<double>& my_mps, mpo<double>& my_mpo,
+          int cutoff, int sweep, int sector, const string& filename);
+template void idmrg1(mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
           int cutoff, int sweep, int sector, const string& filename);
 
 

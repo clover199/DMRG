@@ -86,14 +86,11 @@ template void check_hermitian(int n, lanczos<double>& pass_val);
 template void check_hermitian(int n, lanczos<complex<double> >& pass_val);
 
 template <typename T>
-void two_sites(int size, int cutoff,
-               mps<T>& my_mps, mpo<T>& my_mpo,
+double two_sites(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular)
 {
   lanczos<T> pass_val;
 
-  int l = 0;
-  int r = size-1;
   pass_val.lenv = my_mpo[l];
   pass_val.renv = my_mpo[r];
 #ifdef PBC
@@ -149,7 +146,7 @@ void two_sites(int size, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(data_singular, l, r, s);
+  print_singular(data_singular, l, r, s, cutoff);
 
   my_mps[l] = U;
   my_mps.center(l+1) = S;
@@ -171,19 +168,19 @@ void two_sites(int size, int cutoff,
   V.conjugate();
   my_mps.edge(r).contract(V, vec, 'N', 'N');
 #endif
+  return val[0];
 }
 
-template void two_sites(int size, int cutoff,
+template double two_sites(int l, int r, int cutoff,
                mps<double>& my_mps, mpo<double>& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular);
-template void two_sites(int size, int cutoff,
+template double two_sites(int l, int r, int cutoff,
                mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular);
 
 
 template <typename T>
-void update_two(int l, int r, int cutoff,
-                mps<T>& my_mps, mpo<T>& my_mpo,
+double update_two(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular)
 {
   lanczos<T> pass_val;
@@ -258,7 +255,7 @@ void update_two(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(data_singular, l, r, s);
+  print_singular(data_singular, l, r, s, cutoff);
 
   my_mps[l] = U;
   my_mps.center(l+1) = S;
@@ -279,19 +276,20 @@ void update_two(int l, int r, int cutoff,
   V.conjugate();
   my_mps.edge(r).contract(V, vec, 'N', 'N', 2);
 #endif
+  return val[0];
 }
 
-template void update_two(int l, int r, int cutoff,
+template double update_two(int l, int r, int cutoff,
                 mps<double>& my_mps, mpo<double>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
-template void update_two(int l, int r, int cutoff,
+                int sector, ofstream& data_energy, ofstream& data_singular);
+template double update_two(int l, int r, int cutoff,
                 mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
+                int sector, ofstream& data_energy, ofstream& data_singular);
+
 
 template <typename T>
-void move2right(int l, int r, int cutoff,
-                mps<T>& my_mps, mpo<T>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular)
+double move2right(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
+                int sector, ofstream& data_energy, ofstream& data_singular)
 {
   lanczos<T> pass_val;
 
@@ -357,7 +355,7 @@ void move2right(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 2, cutoff);
-  print_singular(data_singular, l, r, s);
+  print_singular(data_singular, l, r, s, cutoff);
 
   my_mps[l] = U;
 //  my_mps[r] = V;
@@ -371,18 +369,19 @@ void move2right(int l, int r, int cutoff,
   U.conjugate();
   my_mps.edge(l).contract(U, vec, 'T', 'N', 2);
 #endif
+  return val[0];
 }
 
-template void move2right(int l, int r, int cutoff,
+template double move2right(int l, int r, int cutoff,
                 mps<double>& my_mps, mpo<double>& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
-template void move2right(int l, int r, int cutoff,
+                int sector, ofstream& data_energy, ofstream& data_singular);
+template double move2right(int l, int r, int cutoff,
                 mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
-               int sector, ofstream& data_energy, ofstream& data_singular);
+                int sector, ofstream& data_energy, ofstream& data_singular);
+
 
 template <typename T>
-void move2left(int l, int r, int cutoff,
-               mps<T>& my_mps, mpo<T>& my_mpo,
+double move2left(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular)
 {
   lanczos<T> pass_val;
@@ -451,7 +450,7 @@ void move2left(int l, int r, int cutoff,
   qtensor<double> S;
   vector<double> s;
   s = vec.svd(U, S, V, 1, cutoff);
-  print_singular(data_singular, l, r, s);
+  print_singular(data_singular, l, r, s, cutoff);
 
   my_mps.center(l+1) = S;
   my_mps[r] = V;
@@ -464,11 +463,137 @@ void move2left(int l, int r, int cutoff,
   V.conjugate();
   my_mps.edge(r).contract(V, vec, 'N', 'N', 2);
 #endif
+  return val[0];
 }
 
-template void move2left(int l, int r, int cutoff,
+template double move2left(int l, int r, int cutoff,
                mps<double>& my_mps, mpo<double>& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular);
-template void move2left(int l, int r, int cutoff,
+template double move2left(int l, int r, int cutoff,
                mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo,
                int sector, ofstream& data_energy, ofstream& data_singular);
+
+
+template <typename T>
+void grow2right(int l, mps<T>& my_mps, mpo<T>& my_mpo)
+{
+  if(l==0)  my_mps(l) = my_mpo[l];
+  else
+  {
+    qtensor<T> temp;
+    temp.contract(my_mps(l-1), 1, my_mpo[l], 0);
+    temp = temp.exchange(3,4);
+    temp = temp.combine(3,4);
+    my_mps(l) = temp.combine(0,1);
+#ifdef PBC
+    qtensor<T> ope = my_mps.edge(l-1).id(my_mpo[l]);
+    temp.contract(my_mps.edge(l-1), 1, ope, 0);
+    temp = temp.exchange(3,4);
+    temp = temp.combine(3,4);
+    my_mps.edge(l) = temp.combine(0,1);
+#endif
+    my_mps.clear(l-1);
+  }
+}
+
+template void grow2right(int l, mps<double>& my_mps, mpo<double>& my_mpo);
+template void grow2right(int l, mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo);
+
+
+template <typename T>
+void grow2left(int r, mps<T>& my_mps, mpo<T>& my_mpo)
+{
+  if(r==(my_mps.size()-1)) my_mps(r) = my_mpo[r];
+  else
+  {
+    qtensor<T> temp, ope;
+    ope = my_mpo[r].exchange(0,2);
+    temp.contract(my_mps(r+1), 1, ope, 0, true);
+    temp = temp.exchange(0,1);
+    temp = temp.combine(3,4);
+    my_mps(r) = temp.combine(0,1);
+
+#ifdef PBC
+    ope = my_mps.edge(r+1).id(my_mpo[r]);
+    temp.contract(my_mps.edge(r+1), 1, ope, 0, true);
+    temp = temp.exchange(0,1);
+    temp = temp.combine(3,4);
+    my_mps.edge(r) = temp.combine(0,1);
+#endif
+    my_mps.clear(r+1);
+  }
+}
+
+template void grow2left(int r, mps<double>& my_mps, mpo<double>& my_mpo);
+template void grow2left(int r, mps<complex<double> >& my_mps, mpo<complex<double> >& my_mpo);
+
+
+template <typename T>
+void two_sites(int l, int r, mps<T>& my_mps, int sector, 
+               ofstream& data_energy, ofstream& data_singular)
+{
+  lanczos<T> pass_val;
+
+  pass_val.lenv = my_mps(l);
+  pass_val.renv = my_mps(r);
+#ifdef PBC
+  pass_val.ledge = my_mps.edge(l);
+  pass_val.redge = my_mps.edge(r);
+#endif
+
+  vector< vector<int> > dim, sym, dim_ret, sym_ret;
+  generate_dim_sym(dim, sym, pass_val.lenv, 1, pass_val.renv, 1, sector);
+  int d = get_dimension(dim, sym);
+  double *val = new double [NEV*10];
+  T *vecs = new T [d];
+  if(d<2000)
+  {
+    qtensor<T> whole, edge, all;
+    whole.contract(pass_val.lenv, 1, pass_val.renv, 1);
+    whole = whole.simplify();
+#ifdef PBC
+    edge.contract(pass_val.ledge, 1, pass_val.redge, 1);
+    edge = edge.simplify();
+    all.plus(edge, whole);
+    whole = all.simplify();
+#endif
+    whole = whole.exchange(2,3);
+    whole = whole.combine(2,3);
+    whole = whole.combine(0,1);
+    cout << "Using ED, d=" << d << endl;
+//    whole.print_matrix();
+    whole.eig(val, vecs, sector);
+    print_energy(data_energy, l, r, val, d);
+  }
+  else
+  {
+    pass_val.r_num = 1;
+    pass_val.l_num = 2;
+    pass_val.renv.get_map(pass_val.rmap, dim_ret, sym_ret, dim, sym, 'N', 'T', pass_val.r_num, 0);
+    int d_store = get_dimension(dim_ret, sym_ret);
+    pass_val.lenv.get_map(pass_val.lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 0, true);
+#ifdef PBC
+    pass_val.redge.get_map(pass_val.remap, dim_ret, sym_ret, dim, sym, 'N', 'T', pass_val.r_num, 0);
+    pass_val.ledge.get_map(pass_val.lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 1, true);
+#endif
+    pass_val.store = new T [d_store];
+//    check_hermitian(d, pass_val);
+    cout << "Using Lanczos, d=" << d << endl;
+    znaupd(d, NEV, val, vecs, pass_val);
+    delete pass_val.store;
+    print_energy(data_energy, l, r, val);
+  }
+
+  qtensor<T> vec(vecs, dim, sym);
+  qtensor<T> U, V;
+  qtensor<double> S;
+  vector<double> s;
+  s = vec.svd(U, S, V, 1, 0);
+  print_singular(data_singular, l, r, s, s.size());
+}
+
+template void two_sites(int l, int r, mps<double>& my_mps, int sector,
+               ofstream& data_energy, ofstream& data_singular);
+template void two_sites(int l, int r, mps<complex<double> >& my_mps, int sector,
+               ofstream& data_energy, ofstream& data_singular);
+

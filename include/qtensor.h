@@ -39,6 +39,12 @@ public:
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);
 
+  void clear() {
+    dim_.clear();
+    sym_.clear();
+    val_.clear();
+  }
+
   // only used for the 4-tensor MPO
   qtensor id() const;
 

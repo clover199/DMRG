@@ -349,6 +349,48 @@ qtensor< complex<double> > H_Potts3(double f, double j, double p, double t)
   return ret;
 }
 
+// ******************************************************************
+// XYZ Chain: Jx Sx_{i} Sx_{i+1} + Jy Sy_{i} Sy_{i+1} + Jz Sz_{i} Sz_{i+1}
+//
+//  MPO:  I     0      0      0      0   Sx: 0 1     Sy: 0 -i    Sz: 1  0
+//       Sx     0      0      0      0       1 0         i  0        0 -1
+//       Sy     0      0      0      0
+//       Sz     0      0      0      0
+//        0   Jx*Sx  Jy*Sy  Jz*Sz    I
+
+qtensor<complex<double> > H_XYZ(double Jx, double Jy, double Jz)
+{
+  complex<double> i = complex<double>(0,1);
+  tensor<complex<double> > t00(5,1,5,1);  // I, Sz
+  t00.update(    1, 0,0,0,0);
+  t00.update(    1, 3,0,0,0);
+  t00.update(   Jz, 4,0,3,0);
+  t00.update(    1, 4,0,4,0);
+  tensor<complex<double> > t01(5,1,5,1);  // Sx, Sy
+  t01.update(    1, 1,0,0,0);
+  t01.update(   -i, 2,0,0,0);
+  t01.update(   Jx, 4,0,1,0);
+  t01.update(-i*Jy, 4,0,2,0);
+  tensor<complex<double> > t10(5,1,5,1);  // Sx, Sy
+  t10.update(    1, 1,0,0,0);
+  t10.update(    i, 2,0,0,0);
+  t10.update(   Jx, 4,0,1,0);
+  t10.update( i*Jy, 4,0,2,0);
+  tensor<complex<double> > t11(5,1,5,1);  // I, Sz
+  t11.update(    1, 0,0,0,0);
+  t11.update(   -1, 3,0,0,0);
+  t11.update(  -Jz, 4,0,3,0);
+  t11.update(    1, 4,0,4,0);
+
+  qtensor<complex<double> > ret(1,2,1,2);
+  ret.update(t00, 0,0,0,0);
+  ret.update(t01, 0,0,0,1);
+  ret.update(t10, 0,1,0,0);
+  ret.update(t11, 0,1,0,1);
+  return ret;
+}
+
+
 #ifdef FERMION
 // ******************************************************************
 // Kitaev chain: T c^d_{i} c_{i+1} - P c_{i} c_{i+1} + h.c. - 2U c^d_{i] c_{i}

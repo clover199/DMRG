@@ -1147,7 +1147,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     return vector<double>();
   }
   
-  qtensor<T> comb;
+  qtensor<T> comb;  // combine the index to form a matrix
   comb = combine(num, dim_.size()-1);
   comb = comb.combine(0, num-1);
 
@@ -1194,11 +1194,10 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     S.sym_[i] = comb.sym_[i];
   }
 
-  if(cutoff==0) cutoff = sum;
   vector<double> s; // store the sorted singular values
   s.resize(sum);
   // set the cutoff for different symmetry sectors
-  sum = sum < cutoff ? sum : cutoff;
+  if(cutoff!=0 and cutoff<sum) sum = cutoff;
   vector<int> u_num(sym,0);  // the cutoff for different sectors of U
   for(int t=0;t<sum;t++)
   {
@@ -1214,7 +1213,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     u_num[loc] += 1;
   }
   vector<int> v_num(u_num);  // the cutoff for different sectors for V
-  for(int t=sum;t<s.size();t++)
+  for(int t=sum;t<s.size();t++)  // sort the singular values beyond cutoff
   {
     double max = -1;
     int loc;
@@ -1229,6 +1228,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   }
   u_num = v_num;
 
+
   for(int i=0;i<sym;i++)
   {
     S.val_[i].diag(2);
@@ -1239,34 +1239,37 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
 
   // if cutoff is larger than the number of non-zero singular values
   // adding the zeros for U
-  int diff = comb.dimension(0);  // dimension
-  diff = diff < cutoff ? diff : cutoff;  // the actuall cutoff
-  diff = diff-sum; 
-  while(diff>0) for(int i=0;i<sym;i++) if(u_num[i]<comb.dim_[0][i] && diff>0)
+  if(cutoff!=0)
   {
-    u_num[i] += 1;
-    diff--;
-  }
-  // adding the zeros for V
-  diff = comb.dimension(1);
-  diff = diff < cutoff ? diff : cutoff;
-  diff = diff-sum;
-  while(diff>0) for(int i=0;i<sym;i++) if(v_num[i]<comb.dim_[1][i] && diff>0)
-  {
-    v_num[i] += 1;
-    diff--;
-  }
-
-  for(int i=0;i<sym;i++)
-  {
-    U.val_[i] = U.val_[i].resize(1, u_num[i]);
-    U.dim_[1][U.sym_[i][1]] = u_num[i];
-    V.val_[i] = V.val_[i].resize(0, v_num[i]);
-    V.dim_[0][V.sym_[i][0]] = v_num[i];
-    S.val_[i] = S.val_[i].resize(0, u_num[i]);
-    S.dim_[0][S.sym_[i][0]] = u_num[i];
-    S.val_[i] = S.val_[i].resize(1, v_num[i]);
-    S.dim_[1][S.sym_[i][1]] = v_num[i];
+    int diff = comb.dimension(0);  // adding the zeros for U
+    diff = diff < cutoff ? diff : cutoff;  // the actual cutoff
+    diff = diff-sum; 
+    while(diff>0) for(int i=0;i<sym;i++) if(u_num[i]<comb.dim_[0][i] && diff>0)
+    {
+      u_num[i] += 1;
+      diff--;
+    }
+    // adding the zeros for V
+    diff = comb.dimension(1);
+    diff = diff < cutoff ? diff : cutoff;
+    diff = diff-sum;
+    while(diff>0) for(int i=0;i<sym;i++) if(v_num[i]<comb.dim_[1][i] && diff>0)
+    {
+      v_num[i] += 1;
+      diff--;
+    }
+  
+    for(int i=0;i<sym;i++)
+    {
+      U.val_[i] = U.val_[i].resize(1, u_num[i]);
+      U.dim_[1][U.sym_[i][1]] = u_num[i];
+      V.val_[i] = V.val_[i].resize(0, v_num[i]);
+      V.dim_[0][V.sym_[i][0]] = v_num[i];
+      S.val_[i] = S.val_[i].resize(0, u_num[i]);
+      S.dim_[0][S.sym_[i][0]] = u_num[i];
+      S.val_[i] = S.val_[i].resize(1, v_num[i]);
+      S.dim_[1][S.sym_[i][1]] = v_num[i];
+    }
   }
 
   vector< vector<int> > dim;

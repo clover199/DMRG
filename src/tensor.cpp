@@ -149,6 +149,56 @@ void tensor<T>::print_matrix() const
 }
 
 
+template <typename T>
+void tensor<T>::write_file(fstream& name) const
+{
+  name.precision(32);
+  if(!name.is_open()) cerr << "Error in write file: cannot open file\n";
+  name << index_.size();
+  for(int i=0;i<index_.size();i++) name << " " << index_[i];
+  for(int i=0;i<dim_();i++) name << " " << val_[i];
+}
+
+
+template <typename T>
+void tensor<T>::read_file(fstream& name)
+{
+  if(!name.is_open()) cerr << "Error in read file: cannot open file\n";
+  int num;
+  name >> num;
+  index_.resize(num);
+  for(int i=0;i<index_.size();i++) name >> index_[i];
+  num = dim_();
+  val_.resize(num);
+  for(int i=0;i<val_.size();i++) name >> val_[i];
+}
+
+
+template <typename T>
+void tensor<T>::write_file(ofstream& name) const
+{
+  name.precision(32);
+  if(!name.is_open()) cerr << "Error in write file: cannot open file\n";
+  name << index_.size();
+  for(int i=0;i<index_.size();i++) name << " " << index_[i];
+  for(int i=0;i<dim_();i++) name << " " << val_[i];
+}
+
+
+template <typename T>
+void tensor<T>::read_file(ifstream& name)
+{
+  if(!name.is_open()) cerr << "Error in read file: cannot open file\n";
+  int num;
+  name >> num;
+  index_.resize(num);
+  for(int i=0;i<index_.size();i++) name >> index_[i];
+  num = dim_();
+  val_.resize(num);
+  for(int i=0;i<val_.size();i++) name >> val_[i];
+}
+
+
 template <>
 tensor<double>& tensor<double>::conjugate()
 {
@@ -300,7 +350,7 @@ tensor<T> tensor<T>::resize(int k, int n) const
   int d = dim_();
   if(d==0)
   {
-    cerr<< "Error in tensor resize: empty tensor.\n";
+    cerr<< "Warning in tensor resize: empty tensor.\n";
     return *this;
   }
 
@@ -313,6 +363,7 @@ tensor<T> tensor<T>::resize(int k, int n) const
   ret.val_.resize(map.size());
   for(int i=0;i<map.size();i++) if(map[i][k]<index_[k])
     ret.val_[i] = val_[loc_(map[i])];
+  else ret.val_[i] = 0.0;
   return ret;
 }
 
@@ -326,7 +377,7 @@ tensor<T>& tensor<T>::plus(const tensor& A, const tensor& B,
     cerr << "Error in tensor plus: dimension doesn't match.\n A: ";
     for(int i=0;i<A.index_.size();i++)
       cerr << A.index_[i] << " ";
-    cerr << endl << "B: ";
+    cerr << "\n B: ";
     for(int i=0;i<B.index_.size();i++)
       cerr << B.index_[i] << " ";
     cerr << endl;

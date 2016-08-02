@@ -18,6 +18,7 @@ make filename
 ```
 
 > 'filename' does not include the file extension '.cpp'
+
 > 'parameters' can be omitted, then default parameters are used for the calculation
 
 One example is given for the Kitaev Chain in the file 'kitaev.cpp'. To run the example code, replace the 'filename' by 'kitaev' in the above code.

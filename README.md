@@ -13,5 +13,10 @@
 
 '''
 make filename
+
 ./filename.out parameters
 '''
+
+> 'filename' does not include the file extension '.cpp'
+
+One example is given for the Kitaev Chain in the file 'kitaev.cpp'

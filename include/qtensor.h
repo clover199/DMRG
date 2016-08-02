@@ -35,6 +35,15 @@ public:
   qtensor(T* val, const vector< vector<int> >& dim,
           const vector< vector<int> >& sym);
 
+  ~qtensor() {
+    dim_.clear();
+    sym_.clear();
+    val_.clear();
+#ifdef FERMION
+    dir_.clear();
+#endif
+  }
+
   void update(tensor<T>& val,
               int i0, int i1=-1, int i2=-1, int i3=-1, 
               int i4=-1, int i5=-1, int i6=-1, int i7=-1);

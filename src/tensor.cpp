@@ -51,6 +51,7 @@ void tensor<T>::update(T val,
                        int i0, int i1, int i2, int i3,
                        int i4, int i5, int i6, int i7)
 {
+  if(abs(val)<TOL) return;
   vector<int> loc;
   if(i0>=0){ loc.push_back(i0);
   if(i1>=0){ loc.push_back(i1);

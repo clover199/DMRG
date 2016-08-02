@@ -48,6 +48,11 @@ public:
          int i0,   int i1=0, int i2=0, int i3=0, 
          int i4=0, int i5=0, int i6=0, int i7=0);
 
+  ~tensor() {
+    index_.clear();
+    val_.clear();
+  }
+
   /* assign value to a particular member */ 
   void update(T val,
         int i0,    int i1=-1, int i2=-1, int i3=-1, 

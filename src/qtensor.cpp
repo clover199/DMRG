@@ -332,6 +332,7 @@ qtensor<T> qtensor<T>::simplify() const
 template <typename T>
 qtensor<T> qtensor<T>::exchange(int a, int b) const
 {
+  if(dim_.size()==0) return *this;
   if( a>=dim_.size() or b>=dim_.size() or a<0 or b<0)
   {
     cerr << "Error in tensor_quantum exchange: The input index number "

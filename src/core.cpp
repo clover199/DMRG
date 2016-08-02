@@ -200,7 +200,7 @@ double update_two(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, pass_val.lenv, 2, pass_val.renv, 2, sector);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV];
+  double *val;
   T *vecs = new T [d];
   if(0)
   {  // check energy using ED
@@ -240,11 +240,14 @@ double update_two(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
     pass_val.lenv.get_map(pass_val.lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 0, true);
 #ifdef PBC
     pass_val.redge.get_map(pass_val.remap, dim_ret, sym_ret, dim, sym, 'N', 'T', pass_val.r_num, 0);
+    int e_store = get_dimension(dim_ret, sym_ret);
+    d_store = e_store > d_store ? e_store : d_store;
     pass_val.ledge.get_map(pass_val.lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 1, true);
 #endif
-    pass_val.store = new T [d_store];
+    pass_val.store = new T [d_store*10];
 //    check_hermitian(d, pass_val);
     cout << "Using Lanczos, d=" << d << endl;
+    val = new double [NEV];
     znaupd(d, NEV, val, vecs, pass_val);
     delete pass_val.store;
     print_energy(data_energy, l, r, val);
@@ -340,6 +343,8 @@ double move2right(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
     pass_val.lenv.get_map(pass_val.lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 0, true);
 #ifdef PBC
     pass_val.redge.get_map(pass_val.remap, dim_ret, sym_ret, dim, sym, 'N', 'T', pass_val.r_num, 0);
+    int e_store = get_dimension(dim_ret, sym_ret);
+    d_store = e_store > d_store ? e_store : d_store;
     pass_val.ledge.get_map(pass_val.lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 1, true);
 #endif
     pass_val.store = new T [d_store];
@@ -435,6 +440,8 @@ double move2left(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
     pass_val.lenv.get_map(pass_val.lmap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 0, true);
 #ifdef PBC
     pass_val.redge.get_map(pass_val.remap, dim_ret, sym_ret, dim, sym, 'N', 'T', pass_val.r_num, 0);
+    int e_store = get_dimension(dim_ret, sym_ret);
+    d_store = e_store > d_store ? e_store : d_store;
     pass_val.ledge.get_map(pass_val.lemap, dim, sym, dim_ret, sym_ret, 'N', 'T', pass_val.l_num, 1, true);
 #endif
     pass_val.store = new T [d_store];
@@ -544,9 +551,9 @@ void two_sites(int l, int r, mps<T>& my_mps, int sector,
   vector< vector<int> > dim, sym, dim_ret, sym_ret;
   generate_dim_sym(dim, sym, pass_val.lenv, 1, pass_val.renv, 1, sector);
   int d = get_dimension(dim, sym);
-  double *val = new double [NEV*10];
+  double *val;
   T *vecs = new T [d];
-  if(d<2000)
+  if(d<2050)
   {
     qtensor<T> whole, edge, all;
     whole.contract(pass_val.lenv, 1, pass_val.renv, 1);
@@ -562,6 +569,7 @@ void two_sites(int l, int r, mps<T>& my_mps, int sector,
     whole = whole.combine(0,1);
     cout << "Using ED, d=" << d << endl;
 //    whole.print_matrix();
+    val = new double [d];
     whole.eig(val, vecs, sector);
     print_energy(data_energy, l, r, val, d);
   }
@@ -579,10 +587,12 @@ void two_sites(int l, int r, mps<T>& my_mps, int sector,
     pass_val.store = new T [d_store];
 //    check_hermitian(d, pass_val);
     cout << "Using Lanczos, d=" << d << endl;
+    val = new double [NEV];
     znaupd(d, NEV, val, vecs, pass_val);
     delete pass_val.store;
     print_energy(data_energy, l, r, val);
   }
+  delete val;
 
   qtensor<T> vec(vecs, dim, sym);
   qtensor<T> U, V;

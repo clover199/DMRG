@@ -7,7 +7,7 @@ qtensor<T>::qtensor(int i0, int i1, int i2, int i3,
                     int i4, int i5, int i6, int i7)
 {
   vector<int> index; index.clear();
-  if(i0>0){ index.push_back(i0); 
+  if(i0>0){ index.push_back(i0);
   if(i1>0){ index.push_back(i1);
   if(i2>0){ index.push_back(i2);
   if(i3>0){ index.push_back(i3);
@@ -15,9 +15,10 @@ qtensor<T>::qtensor(int i0, int i1, int i2, int i3,
   if(i5>0){ index.push_back(i5);
   if(i6>0){ index.push_back(i6);
   if(i7>0){ index.push_back(i7); }}}}}}}}
-  
+
   dim_.resize(index.size());
   for(int i=0;i<dim_.size();i++) dim_[i].resize(index[i]);
+  dir_.resize(dim_.size());
 }
 
 
@@ -25,7 +26,7 @@ template <typename T>
 qtensor<T>::qtensor(T* val, const vector< vector<int> >& dim,
                     const vector< vector<int> >& sym)
 {
-  dir_ = vector<int> (dim.size(),1);
+  dir_ = vector<int> (dim.size(),0);
   dim_ = dim;
   sym_ = sym;
 
@@ -45,8 +46,8 @@ qtensor<T>::qtensor(T* val, const vector< vector<int> >& dim,
     count += d;
   }
 }
-						
-	  
+
+
 template <typename T>
 void qtensor<T>::update(tensor<T>& val,
                         int i0, int i1, int i2, int i3,
@@ -70,11 +71,11 @@ void qtensor<T>::update(tensor<T>& val,
             "The number of index doesn't match. \n";
     return ;
   }
-  
+
   for(int i=0;i<loc.size();i++) if(loc[i]>=dim_[i].size())
   {
     cerr << "Error in tensor_quantum update: "
-            "The input " << i+1 << "th index " << loc[i] 
+            "The input " << i+1 << "th index " << loc[i]
          << " is out of range 0~" << dim_[i].size()-1 << endl;
     return ;
   }
@@ -86,11 +87,11 @@ void qtensor<T>::update(tensor<T>& val,
 
 
 template <typename T>
-void qtensor<T>::u_dim(int i0, int i1, int i2, int i3, 
+void qtensor<T>::u_dim(int i0, int i1, int i2, int i3,
                        int i4, int i5, int i6, int i7)
 {
   vector<int> index; index.clear();
-  if(i0>0){ index.push_back(i0); 
+  if(i0>0){ index.push_back(i0);
   if(i1>0){ index.push_back(i1);
   if(i2>0){ index.push_back(i2);
   if(i3>0){ index.push_back(i3);
@@ -98,26 +99,26 @@ void qtensor<T>::u_dim(int i0, int i1, int i2, int i3,
   if(i5>0){ index.push_back(i5);
   if(i6>0){ index.push_back(i6);
   if(i7>0){ index.push_back(i7); }}}}}}}}
-  
+
   if( index.size() != dim_.size() )
   {
     cerr << "Error in tensor_quantum u_dim: "
             "The number of index doesn't match. \n";
     return;
   }
-  
+
   for(int i=0;i<index.size();i++) for(int j=0;j<dim_[i].size();j++)
   {
     if( dim_[i][j]!=0 and dim_[i][j]!=index[i])
     {
       cerr << "Error in tensor_quantum u_dim: "
-              "The input " << i+1 << "th index " << index[i] 
+              "The input " << i+1 << "th index " << index[i]
            << " doesn't match existing " << dim_[i][j]
            << " of symmetry sector " << j << endl;
       return;
     }
   }
-	
+
   for(int i=0;i<index.size();i++) for(int j=0;j<dim_[i].size();j++)
     dim_[i][j] = index[i];
 }
@@ -186,7 +187,7 @@ qtensor<T> qtensor<T>::id(const qtensor<T>& bulk_mpo) const
 
 
 template <typename T>
-void qtensor<T>::add_sign(int i0, int i1, int i2, int i3, 
+void qtensor<T>::add_sign(int i0, int i1, int i2, int i3,
                           int i4, int i5, int i6, int i7)
 {
   dir_.clear();
@@ -267,7 +268,7 @@ void qtensor<T>::print_matrix() const
   cout.precision(3);
   if(2==dim_.size())
   {
-    cout << "This is a fermion operator. dir_=(" 
+    cout << "This is a fermion operator. dir_=("
          << dir_[0] << ", " << dir_[1] << ")\n";
 
     cout << "Print the tensor_quantum as a matrix: \n";
@@ -352,12 +353,12 @@ qtensor<T> qtensor<T>::exchange(int a, int b) const
   if( a>=dim_.size() or b>=dim_.size() or a<0 or b<0)
   {
     cerr << "Error in tensor_quantum exchange: The input index number "
-         << a << " and " << b 
+         << a << " and " << b
          << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
-  
-  qtensor<T> ret = *this; 
+
+  qtensor<T> ret = *this;
   ret.dim_[a] = dim_[b];
   ret.dim_[b] = dim_[a];
   ret.dir_[a] = dir_[b];
@@ -381,7 +382,7 @@ qtensor<T> qtensor<T>::shift(int num) const
          << num << " is out of range 1~" << dim_.size()-1 << endl;
     return *this;
   }
-  
+
   qtensor<T> ret = *this;
   for(int i=0;i<dim_.size();i++)
     ret.dim_[i] = dim_[(i+num)%dim_.size()];
@@ -393,7 +394,7 @@ qtensor<T> qtensor<T>::shift(int num) const
       ret.sym_[i] = sym_[(i+num)%dim_.size()];
     val_[i].shift(ret.val_[i], num);
   }
-  return ret; 
+  return ret;
 }
 
 
@@ -419,7 +420,7 @@ qtensor<T> qtensor<T>::take(int n, int k) const
   if( k<0 or k>=dim_[n][0])
   {
     cout << "Error in tensor_quantum take: "
-            "the number " << k << " is out of the dimension range 0~" 
+            "the number " << k << " is out of the dimension range 0~"
          << dim_[n][0] << endl;
     return ret;
   }
@@ -439,7 +440,7 @@ qtensor<T> qtensor<T>::take(int n, int k) const
   {
     ret.sym_[s].resize(ret.dim_.size());
     for(int i=0;i<n;i++) ret.sym_[s][i] = sym_[s][i];
-    for(int i=n;i<ret.dim_.size();i++) ret.sym_[s][i] = sym_[s][i+1];	
+    for(int i=n;i<ret.dim_.size();i++) ret.sym_[s][i] = sym_[s][i+1];
     val_[s].take(ret.val_[s], n,k);
   }
   return ret.simplify();
@@ -469,11 +470,11 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   if(min<0 or min>max or max>=dim_.size())
   {
     cerr << "Error in tensor_quantum combine: "
-            "The input indexes " << min << " " << max 
+            "The input indexes " << min << " " << max
          << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
-  
+
   qtensor<T> ret;
   for(int i=min;i<max;i++) if(dir_[i]!=dir_[max])
   {
@@ -549,7 +550,7 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
     sym_dim[i] = store[sym_sum[i]];
     store[sym_sum[i]] += temp;
   }
-  
+
   for(int t=0;t<val_.size();t++)
   {
     int loc = -1;  // location in ret.val_
@@ -594,7 +595,7 @@ qtensor<T> qtensor<T>::split(int n, vector< vector<int> > dim) const
   for(int i=0;i<dim.size();i++) ret.dir_[n+i] = dir_[n];
   for(int i=n+dim.size();i<ret.dir_.size();i++)
     ret.dir_[i] = dir_[i-dim.size()+1];
-  
+
   ret.dim_.resize(dim_.size()+dim.size()-1);
   for(int i=0;i<n;i++) ret.dim_[i] = dim_[i];
   for(int i=0;i<dim.size();i++) ret.dim_[n+i] = dim[i];
@@ -638,7 +639,7 @@ qtensor<T> qtensor<T>::split(int n, vector< vector<int> > dim) const
       T store = val_[t].val_[i*m*r+(j+sym_dim[s][2])*r+k];
       if(not check && abs(store)>TOL) check = true;
       temp.val_[count++] = store;
-    } 
+    }
     if(check)
     {
       for(int i=0;i<n;i++) index_new[i] = sym_[t][i];
@@ -697,7 +698,7 @@ qtensor<T> qtensor<T>::cut(int n, vector<int> cutoff) const
          << n << " is out of range 0~" << dim_.size()-1 << endl;
     return *this;
   }
-  
+
   if(cutoff.size()!=dim_[n].size())
   {
     cerr << "Error in tensor_quantum cut: The input cut size "
@@ -705,7 +706,7 @@ qtensor<T> qtensor<T>::cut(int n, vector<int> cutoff) const
          << dim_[n].size() << endl;
     return *this;
   }
-  
+
   qtensor<T> ret;
   ret.dir_ = dir_;
   ret.dim_.resize(dim_.size());
@@ -841,7 +842,7 @@ qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
     cerr << endl;
     return *this;
   }
-  
+
   int ad = 0;
   dim_.resize(A.dim_.size()+B.dim_.size()-2*num);
   for(int i=0;i<A.dim_.size();i++) if(i<indexa or i>=indexa+num)
@@ -1114,7 +1115,7 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
       }
     }
   }
-  return true;  
+  return true;
 }
 
 
@@ -1128,7 +1129,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
             "The number of left indexes should be 1~"<< dim_.size()-1 << endl;
     return vector<double>();
   }
-  
+
   qtensor<T> comb;  // combine the index to form a matrix
   comb = combine(num, dim_.size()-1);
   comb = comb.combine(0, num-1);
@@ -1221,7 +1222,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   {
     int diff = comb.dimension(0);  // adding the zeros for U
     diff = diff < cutoff ? diff : cutoff;  // the actual cutoff
-    diff = diff-sum; 
+    diff = diff-sum;
     while(diff>0) for(int i=0;i<sym;i++) if(u_num[i]<comb.dim_[0][i] && diff>0)
     {
       u_num[i] += 1;
@@ -1236,7 +1237,7 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
       v_num[i] += 1;
       diff--;
     }
-  
+
     for(int i=0;i<sym;i++)
     {
       U.val_[i].resize(1, u_num[i]);

@@ -103,7 +103,7 @@ double two_sites(int l, int r, int cutoff, mps<T>& my_mps, mpo<T>& my_mpo,
   int d = get_dimension(dim, sym);
   double *val = new double [NEV*10];
   T *vecs = new T [d];
-  if(d<NEV*10)
+  if(d<NEV)
   {
     qtensor<T> whole, edge, all;
     whole.contract(pass_val.lenv, 1, pass_val.renv, 1);

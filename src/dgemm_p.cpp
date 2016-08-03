@@ -17,7 +17,7 @@
 
 using namespace std;
 
-void zgemm(char transa, char transb, int m, int n, int k,
+void dgemm(char transa, char transb, int m, int n, int k,
            double *a, double *b, double *c, double alpha, double beta)
 {
   CBLAS_TRANSPOSE TRANSA = CblasTrans;

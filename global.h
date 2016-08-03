@@ -13,7 +13,8 @@
 
 #define PBC
 #define FERMION
-#define SYMMETRY 2
+#define SYMMETRY 8
+#define S4E
 
 #define TOL 1e-10  // the tolerence for arpack solver
 #define ACC 10  // the precision of data printed

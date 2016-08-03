@@ -3,21 +3,6 @@
 #include "useful.h"
 
 template <typename T>
-void qtensor<T>::check_dim_(int n)
-{
-  for(int i=0;i<dim_.size();i++)
-  {
-    if( dim_[i][sym_[n][i]]==0 )
-      dim_[i][sym_[n][i]] = val_[n].dimension(i);
-    else if( dim_[i][sym_[n][i]]!=val_[n].dimension(i) )
-      cerr << "Error in tensor_quantum check_dim_: "
-           << dim_[i][sym_[n][i]] << "!=" << val_[n].dimension(i)
-           << endl;
-  }
-}
-
-
-template <typename T>
 qtensor<T>::qtensor(int i0, int i1, int i2, int i3,
                     int i4, int i5, int i6, int i7)
 {
@@ -40,9 +25,7 @@ template <typename T>
 qtensor<T>::qtensor(T* val, const vector< vector<int> >& dim,
                     const vector< vector<int> >& sym)
 {
-#ifdef FERMION
   dir_ = vector<int> (dim.size(),1);
-#endif
   dim_ = dim;
   sym_ = sym;
 
@@ -69,6 +52,8 @@ void qtensor<T>::update(tensor<T>& val,
                         int i0, int i1, int i2, int i3,
                         int i4, int i5, int i6, int i7)
 {
+  if(val.empty()) return;
+
   vector<int> loc;
   if(i0>=0){ loc.push_back(i0);
   if(i1>=0){ loc.push_back(i1);
@@ -79,26 +64,62 @@ void qtensor<T>::update(tensor<T>& val,
   if(i6>=0){ loc.push_back(i6);
   if(i7>=0){ loc.push_back(i7);}}}}}}}}
 
-  if( loc.size() == dim_.size() )
+  if( loc.size() != dim_.size() )
   {
-    bool check = true;
-    for(int i=0;i<loc.size();i++) if(loc[i]>=dim_[i].size())
-    {
-      cerr << "Error in tensor_quantum update: "
-              "The input " << i+1 << "th index " << loc[i] 
-           << " is out of range 0~" << dim_[i].size()-1 << endl;
-      check = false;
-    }
-    if(check)
-    {
-      sym_.push_back(loc);
-      val_.push_back(val);
-      check_dim_(sym_.size()-1);
-    }
-  }
-  else
     cerr << "Error in tensor_quantum update: "
             "The number of index doesn't match. \n";
+    return ;
+  }
+  
+  for(int i=0;i<loc.size();i++) if(loc[i]>=dim_[i].size())
+  {
+    cerr << "Error in tensor_quantum update: "
+            "The input " << i+1 << "th index " << loc[i] 
+         << " is out of range 0~" << dim_[i].size()-1 << endl;
+    return ;
+  }
+
+  sym_.push_back(loc);
+  val_.push_back(val);
+  check_dim_(sym_.size()-1);
+}
+
+
+template <typename T>
+void qtensor<T>::u_dim(int i0, int i1, int i2, int i3, 
+                       int i4, int i5, int i6, int i7)
+{
+  vector<int> index; index.clear();
+  if(i0>0){ index.push_back(i0); 
+  if(i1>0){ index.push_back(i1);
+  if(i2>0){ index.push_back(i2);
+  if(i3>0){ index.push_back(i3);
+  if(i4>0){ index.push_back(i4);
+  if(i5>0){ index.push_back(i5);
+  if(i6>0){ index.push_back(i6);
+  if(i7>0){ index.push_back(i7); }}}}}}}}
+  
+  if( index.size() != dim_.size() )
+  {
+    cerr << "Error in tensor_quantum u_dim: "
+            "The number of index doesn't match. \n";
+    return;
+  }
+  
+  for(int i=0;i<index.size();i++) for(int j=0;j<dim_[i].size();j++)
+  {
+    if( dim_[i][j]!=0 and dim_[i][j]!=index[i])
+    {
+      cerr << "Error in tensor_quantum u_dim: "
+              "The input " << i+1 << "th index " << index[i] 
+           << " doesn't match existing " << dim_[i][j]
+           << " of symmetry sector " << j << endl;
+      return;
+    }
+  }
+	
+  for(int i=0;i<index.size();i++) for(int j=0;j<dim_[i].size();j++)
+    dim_[i][j] = index[i];
 }
 
 
@@ -106,23 +127,26 @@ template <typename T>
 qtensor<T> qtensor<T>::id() const
 {
   qtensor<T> ret;
-  ret.dim_ = dim_;
-#ifdef FERMION
-  ret.dir_ = dir_;
-#endif
-  ret.sym_.clear();
-  ret.val_.clear();
-  vector<int> index(dim_.size(), 0);
-  vector< vector<int> > map;
-  for(int s=0;s<val_.size();s++) if(sym_[s][0]==sym_[s][2] and sym_[s][1]==sym_[s][3])
+  if(dim_[0]!=dim_[2] or dim_[1]!=dim_[3])
   {
-    ret.sym_.push_back(sym_[s]);
-    ret.val_.push_back(val_[s]);
-    for(int i=0;i<index.size();i++) index[i] = dim_[i][sym_[s][i]];
-    generate_map(map, index);
-    for(int i=0;i<map.size();i++) if(map[i][0]==map[i][2] and map[i][1]==map[i][3])
-      ret.val_.back().val_[i] = 1;
-    else ret.val_.back().val_[i] = 0;
+    cerr << "Error in tensor_quantum id: Wrong dim" << endl;
+    return ret;
+  }
+  ret.dim_ = dim_;
+  ret.dir_ = dir_;
+  ret.sym_.resize(dim_[0].size()*dim_[1].size());
+  ret.val_.resize(dim_[0].size()*dim_[1].size());
+
+  for(int s1=0;s1<dim_[0].size();s1++) for(int s2=0;s2<dim_[1].size();s2++)
+  {
+    int index = s1*dim_[1].size()+s2;
+    vector<int> sym(4,0);
+	sym[0]=s1; sym[1]=s2; sym[2]=s1; sym[3]=s2;
+    ret.sym_[index] = sym;
+	vector<int> dim;
+	get_index_(dim, sym);
+    ret.val_[index] = tensor<T> (dim);
+	ret.val_[index].id(0,2, 1,3);
   }
   return ret;
 }
@@ -135,11 +159,11 @@ qtensor<T> qtensor<T>::id(const qtensor<T>& bulk_mpo) const
   ret.dim_ = bulk_mpo.dim_;
   ret.dim_[0] = dim_[1];
   ret.dim_[2] = dim_[1];
-#ifdef FERMION
+
   ret.dir_ = bulk_mpo.dir_;
   ret.dir_[0] = dir_[1];
   ret.dir_[2] = dir_[1];
-#endif
+
   ret.sym_.clear();
   ret.val_.clear();
   vector<int> sym(ret.dim_.size(), 0);
@@ -160,8 +184,7 @@ qtensor<T> qtensor<T>::id(const qtensor<T>& bulk_mpo) const
   return ret;
 }
 
-		  
-#ifdef FERMION
+
 template <typename T>
 void qtensor<T>::add_sign(int i0, int i1, int i2, int i3, 
                           int i4, int i5, int i6, int i7)
@@ -180,7 +203,7 @@ void qtensor<T>::add_sign(int i0, int i1, int i2, int i3,
     cerr << "Error in tensor_quantum add_sign: "
             "The number of index doesn't match. \n";
 }
-#endif
+
 
 template <typename T>
 void qtensor<T>::print() const
@@ -188,11 +211,10 @@ void qtensor<T>::print() const
   if(dim_.size()==0) cout << "Empty!" << endl;
   else
   {
-#ifdef FERMION
     cout << "This is a fermionic tensor with sigh direction: (" << dir_[0];
     for(int i=1;i<dir_.size();i++) cout << ", " << dir_[i];
     cout << ")\n";
-#endif
+
     cout << "Dimension for different symmetry sectors:\n";
     for(int i=0;i<dim_.size();i++)
     {
@@ -245,10 +267,9 @@ void qtensor<T>::print_matrix() const
   cout.precision(3);
   if(2==dim_.size())
   {
-#ifdef FERMION
     cout << "This is a fermion operator. dir_=(" 
          << dir_[0] << ", " << dir_[1] << ")\n";
-#endif
+
     cout << "Print the tensor_quantum as a matrix: \n";
     for(int n=0;n<val_.size();n++)
     {
@@ -275,9 +296,7 @@ void qtensor<T>::print_matrix() const
 template<typename T>
 qtensor<T> qtensor<T>::conjugate()
 {
-#ifdef FERMION
   for(int i=0;i<dir_.size();i++) dir_[i] *= -1;
-#endif
   for(int i=0;i<val_.size();i++) val_[i].conjugate();
   return *this;
 }
@@ -289,11 +308,10 @@ qtensor< complex<double> > qtensor<double>::comp() const
   qtensor<complex<double> > ret;
   ret.dim_ = dim_;
   ret.sym_ = sym_;
-#ifdef FERMION
   ret.dir_ = dir_;
-#endif
+
   ret.val_.resize(val_.size());
-  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i].comp();
+  for(int i=0;i<val_.size();i++) val_[i].to_complex(ret.val_[i]);
   return ret;
 }
 
@@ -308,9 +326,7 @@ template <typename T>
 qtensor<T> qtensor<T>::simplify() const
 {
   qtensor<T> ret;
-#ifdef FERMION
   ret.dir_ = dir_;
-#endif
   ret.dim_ = dim_;
   ret.sym_.clear();
   ret.val_.clear();
@@ -344,15 +360,13 @@ qtensor<T> qtensor<T>::exchange(int a, int b) const
   qtensor<T> ret = *this; 
   ret.dim_[a] = dim_[b];
   ret.dim_[b] = dim_[a];
-#ifdef FERMION
   ret.dir_[a] = dir_[b];
   ret.dir_[b] = dir_[a];
-#endif
   for(int i=0;i<val_.size();i++)
   {
     ret.sym_[i][a] = sym_[i][b];
     ret.sym_[i][b] = sym_[i][a];
-    ret.val_[i] = val_[i].exchange(a,b);
+    val_[i].exchange(ret.val_[i], a,b);
   }
   return ret;
 }
@@ -371,15 +385,13 @@ qtensor<T> qtensor<T>::shift(int num) const
   qtensor<T> ret = *this;
   for(int i=0;i<dim_.size();i++)
     ret.dim_[i] = dim_[(i+num)%dim_.size()];
-#ifdef FERMION
   for(int i=0;i<dir_.size();i++)
     ret.dir_[i] = dir_[(i+num)%dir_.size()];
-#endif
   for(int i=0;i<val_.size();i++)
   {
     for(int j=0;j<dim_.size();j++)
       ret.sym_[i] = sym_[(i+num)%dim_.size()];
-    ret.val_[i] = val_[i].shift(num);
+    val_[i].shift(ret.val_[i], num);
   }
   return ret; 
 }
@@ -416,11 +428,9 @@ qtensor<T> qtensor<T>::take(int n, int k) const
   for(int i=0;i<n;i++) ret.dim_[i] = dim_[i];
   for(int i=n;i<ret.dim_.size();i++) ret.dim_[i] = dim_[i+1];
 
-#ifdef FERMION
   ret.dir_.resize(dir_.size()-1);
   for(int i=0;i<n;i++) ret.dir_[i] = dir_[i];
   for(int i=n;i<ret.dir_.size();i++) ret.dir_[i] = dir_[i+1];
-#endif
 
   ret.sym_.resize(sym_.size());
   ret.val_.resize(val_.size());
@@ -429,23 +439,10 @@ qtensor<T> qtensor<T>::take(int n, int k) const
   {
     ret.sym_[s].resize(ret.dim_.size());
     for(int i=0;i<n;i++) ret.sym_[s][i] = sym_[s][i];
-    for(int i=n;i<ret.dim_.size();i++) ret.sym_[s][i] = sym_[s][i+1];
-    ret.val_[s].index_.resize(ret.dim_.size());
-    for(int i=0;i<n;i++) ret.val_[s].index_[i] = val_[s].index_[i];
-    for(int i=n;i<ret.dim_.size();i++) ret.val_[s].index_[i] = val_[s].index_[i+1];
-    generate_map(map, val_[s].index_);
-    ret.val_[s].val_.resize(val_[s].val_.size()/val_[s].index_[n]);
-    for(int i=0;i<map.size();i++) if(map[i][n]==k)
-    {
-      int loc = 0;
-      vector<int> index(ret.dim_.size(),0);
-      for(int j=0;j<n;j++) index[j] = map[i][j];
-      for(int j=n;j<index.size();j++) index[j] = map[i][j+1];
-      for(int j=0;j<ret.dim_.size();j++) loc = loc*ret.val_[s].index_[j]+index[j];
-      ret.val_[s].val_[loc] = val_[s].val_[i];
-    }
+    for(int i=n;i<ret.dim_.size();i++) ret.sym_[s][i] = sym_[s][i+1];	
+    val_[s].take(ret.val_[s], n,k);
   }
-  return ret;
+  return ret.simplify();
 }
 
 template <typename T>
@@ -478,7 +475,6 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   }
   
   qtensor<T> ret;
-#ifdef FERMION
   for(int i=min;i<max;i++) if(dir_[i]!=dir_[max])
   {
     cerr << "Error in tensor_quantum combine: "
@@ -490,7 +486,6 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   ret.dir_.resize(dir_.size()-(max-min));
   for(int i=0;i<min;i++) ret.dir_[i] = dir_[i];
   for(int i=max;i<dir_.size();i++) ret.dir_[i-(max-min)] = dir_[i];
-#endif
 
   vector< vector<int> > map;  // all the possible symmetry combinations
   vector<int> sym_sum;
@@ -504,7 +499,7 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   // calculate the total symmetry for all possibilities in map
   sym_sum = vector<int> (map.size(),0);
   for(int i=0;i<map.size();i++) for(int s=0;s<max-min+1;s++)
-    sym_sum[i] = add(sym_sum[i], map[i][s]);
+    sym_sum[i] = ss(sym_sum[i], map[i][s]);
   int sym = 0;  // find symmetry number for the combined part
   for(int i=0;i<sym_sum.size();i++) if(sym_sum[i]>sym) sym = sym_sum[i];
 
@@ -523,7 +518,7 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   {
     vector<int> loc (index.size(), 0);
     for(int i=0;i<min;i++) loc[i] = sym_[t][i];
-    for(int i=min;i<=max;i++) loc[min] = add(loc[min], sym_[t][i]);
+    for(int i=min;i<=max;i++) loc[min] = ss(loc[min], sym_[t][i]);
     for(int i=max+1;i<dim_.size();i++) loc[i-(max-min)] = sym_[t][i];
     int k = 0;
     for(int i=0;i<loc.size();i++) k = k*index[i] + loc[i];
@@ -559,7 +554,7 @@ qtensor<T> qtensor<T>::combine(int min, int max) const
   {
     int loc = -1;  // location in ret.val_
     int sum = 0;  // sum of symmetry
-    for(int i=min;i<=max;i++) sum = add(sum, sym_[t][i]);
+    for(int i=min;i<=max;i++) sum = ss(sum, sym_[t][i]);
     for(int s=0;s<ret.sym_.size();s++) if(sum == ret.sym_[s][min])
     {
       bool test = true;
@@ -594,13 +589,11 @@ qtensor<T> qtensor<T>::split(int n, vector< vector<int> > dim) const
 {
   qtensor<T> ret;
 
-#ifdef FERMION
   ret.dir_.resize(dir_.size()+dim.size()-1);
   for(int i=0;i<n;i++) ret.dir_[i] = dir_[i];
   for(int i=0;i<dim.size();i++) ret.dir_[n+i] = dir_[n];
   for(int i=n+dim.size();i<ret.dir_.size();i++)
     ret.dir_[i] = dir_[i-dim.size()+1];
-#endif
   
   ret.dim_.resize(dim_.size()+dim.size()-1);
   for(int i=0;i<n;i++) ret.dim_[i] = dim_[i];
@@ -621,7 +614,7 @@ qtensor<T> qtensor<T>::split(int n, vector< vector<int> > dim) const
   {
     sym_dim[i].resize(3);
     sym_dim[i][0] = 0; // the symmetry sum
-    for(int s=0;s<dim.size();s++) sym_dim[i][0] = add(sym_dim[i][0], map[i][s]);
+    for(int s=0;s<dim.size();s++) sym_dim[i][0] = ss(sym_dim[i][0], map[i][s]);
     sym_dim[i][1] = 1; // dimension
     for(int s=0;s<dim.size();s++) sym_dim[i][1] *= dim[s][map[i][s]];
     sym_dim[i][2] = index_new[sym_dim[i][0]]; // beg
@@ -666,9 +659,7 @@ template <typename T>
 qtensor<T> qtensor<T>::remove_symmetry() const
 {
   qtensor<T> ret;
-#ifdef FERMION
   ret.dir_ = dir_;
-#endif
   ret.dim_.resize(dim_.size());
   for(int i=0;i<dim_.size();i++) ret.dim_[i] = vector<int> (1,dimension(i));
   ret.sym_.resize(1);
@@ -716,17 +707,15 @@ qtensor<T> qtensor<T>::cut(int n, vector<int> cutoff) const
   }
   
   qtensor<T> ret;
-#ifdef FERMION
   ret.dir_ = dir_;
-#endif
   ret.dim_.resize(dim_.size());
   for(int i=0;i<dim_.size();i++) ret.dim_[i].resize(dim_[i].size());
   ret.sym_ = sym_;
-  ret.val_.resize(val_.size());
+  ret.val_ = val_;
 
   for(int i=0;i<val_.size();i++)
   {
-    ret.val_[i] = val_[i].resize(n, cutoff[sym_[i][n]]);
+    ret.val_[i].resize(n, cutoff[sym_[i][n]]);
     ret.check_dim_(i);
   }
   return ret;
@@ -743,7 +732,6 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
             "dimensions do not match.\n" ;
     return *this;
   }
-#ifdef FERMION
   if( A.dir_ != B.dir_ )
   {
     cerr << "Error in tensor_quantum plus: "
@@ -751,7 +739,6 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
     return *this;
   }
   dir_ = A.dir_;
-#endif
 
   dim_ = A.dim_;
 
@@ -779,17 +766,19 @@ qtensor<T>& qtensor<T>::plus(const qtensor& A, const qtensor& B,
     if(map[i][0]==-1)
     {
       sym_[i] = B.sym_[map[i][1]];
-      val_[i] = B.val_[map[i][1]].times(beta);
+      val_[i] = B.val_[map[i][1]];
+      val_[i].times(beta);
     }
     else if(map[i][1]==-1)
     {
       sym_[i] = A.sym_[map[i][0]];
-      val_[i] = A.val_[map[i][0]].times(alpha);
+      val_[i] = A.val_[map[i][0]];
+      val_[i].times(alpha);
     }
     else
     {
       sym_[i] = A.sym_[map[i][0]];
-      val_[i].plus(A.val_[map[i][0]], B.val_[map[i][1]], alpha, beta);
+      A.val_[map[i][0]].plus(val_[i], B.val_[map[i][1]], alpha, beta);
     }
   }
   return *this;
@@ -805,27 +794,26 @@ T qtensor<T>::trace(qtensor& A, bool fermion)
             "dimensions do not match:\n";
     return 0.0;
   }
-#ifdef FERMION
   if( A.dir_ != dir_ )
   {
     cerr << "Error in tensor_quantum trace: "
             "fermion directions do not match.\n" ;
     return 0.0;
   }
-#endif
 
   T ret = 0.0;
   double sign = 1;
   for(int l=0;l<sym_.size();l++) for(int r=0;r<A.sym_.size();r++)
     if(sym_[l]==A.sym_[r])
     {
-#ifdef FERMION
-int d_b = 0;
-for(int i=0;i<A.dir_.size();i++) d_b = add(d_b, A.sym_[r][i]*A.dir_[i]);
-int a_p = 0;
-for(int i=0;i<dir_.size();i++) if(dir_[i]==1) a_p = add(a_p, sym_[l][i]);
-sign = 1-2*((d_b*a_p)%2);
-#endif
+      if(fermion)
+      {
+        int d_b = 0;
+        for(int i=0;i<A.dir_.size();i++) d_b = ss(d_b, A.sym_[r][i]*A.dir_[i]);
+        int a_p = 0;
+        for(int i=0;i<dir_.size();i++) if(dir_[i]==1) a_p = ss(a_p, sym_[l][i]);
+        sign = 1-2*( ( ff(d_b) * ff(a_p) )%2 );
+      }
       ret += val_[l].trace(A.val_[r])*sign;
     }
   return ret;
@@ -834,7 +822,7 @@ sign = 1-2*((d_b*a_p)%2);
 
 template <typename T>
 qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
-                                  char transa, char transb, int num)
+                                 char transa, char transb, int num)
 {
   int indexa = 0;
   if( 'N'==transa or 'n'==transa ) indexa = A.dim_.size()-num;
@@ -861,14 +849,12 @@ qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
   for(int i=0;i<B.dim_.size();i++) if(i<indexb or i>=indexb+num)
     dim_[ad++] = B.dim_[i];
 
-#ifdef FERMION
   ad = 0;
   dir_.resize(A.dir_.size()+B.dir_.size()-2*num);
   for(int i=0;i<A.dir_.size();i++) if(i<indexa or i>=indexa+num)
     dir_[ad++] = A.dir_[i];
   for(int i=0;i<B.dir_.size();i++) if(i<indexb or i>=indexb+num)
     dir_[ad++] = B.dir_[i];
-#endif
 
   sym_.clear();
   val_.clear();
@@ -914,7 +900,7 @@ qtensor<T>& qtensor<T>::contract(qtensor<T>& A, qtensor<T>& B,
 
 template <typename T>
 qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
-                                 const qtensor<T>& B, int b, bool change)
+                                 const qtensor<T>& B, int b, bool change, bool fermion)
 {
   if(A.dim_[a]!=B.dim_[b])
   {
@@ -934,14 +920,12 @@ qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
   for(int i=a+B.dim_.size()-1;i<dim_.size();i++)
     dim_[i] = A.dim_[i-B.dim_.size()+2];
 
-#ifdef FERMION
   dir_.resize(A.dir_.size()+B.dir_.size()-2);
   for(int i=0;i<a;i++) dir_[i] = A.dir_[i];
   for(int i=a;i<a+b;i++) dir_[i] = B.dir_[i-a];
   for(int i=a+b;i<a+B.dir_.size()-1;i++) dir_[i] = B.dir_[i-a+1];
   for(int i=a+B.dir_.size()-1;i<dir_.size();i++)
     dir_[i] = A.dir_[i-B.dir_.size()+2];
-#endif
 
   sym_.clear();
   val_.clear();
@@ -958,26 +942,25 @@ qtensor<T>& qtensor<T>::contract(const qtensor<T>& A, int a,
       sym[i] = A.sym_[l][i-B.dim_.size()+2];
 
     int sign = 1;
-#ifdef FERMION
-    if(change)
+    if(fermion) if(change)
     {
       int d_a = 0;  // the sign for O_A
-      for(int i=0;i<A.dir_.size();i++) d_a = add(d_a, A.sym_[l][i]*A.dir_[i]);
+      for(int i=0;i<A.dir_.size();i++) d_a = ss(d_a, A.sym_[l][i]*A.dir_[i]);
       int b_p = 0;  // the sign for the right index of B
       for(int i=0;i<B.dir_.size();i++) if(B.dir_[i]==1)
-        b_p = add(b_p, B.sym_[r][i]);
-      sign = (1-2*((d_a*b_p)%2));
+        b_p = ss(b_p, B.sym_[r][i]);
+      sign = (1-2*(( ff(d_a) * ff(b_p) )%2));
     }
-	else
+    else
     {
       int d_b = 0;  // the sign for O_B
-      for(int i=0;i<B.dir_.size();i++) d_b = add(d_b, B.sym_[r][i]*B.dir_[i]);
+      for(int i=0;i<B.dir_.size();i++) d_b = ss(d_b, B.sym_[r][i]*B.dir_[i]);
       int a_p = 0;  // the sign for the right index of A
       for(int i=0;i<A.dir_.size();i++) if(A.dir_[i]==1)
-        a_p = add(a_p, A.sym_[l][i]);
-      sign = (1-2*((d_b*a_p)%2));
+        a_p = ss(a_p, A.sym_[l][i]);
+      sign = (1-2*(( ff(d_b) * ff(a_p) )%2));
     }
-#endif
+
     int loc = 0;
     for(int s=0;s<sym.size();s++) loc = loc*dim_[s].size()+sym[s];
     bool same = false;
@@ -1091,16 +1074,14 @@ bool qtensor<T>::get_map(vector< vector<int> >& map_ret,
       map_store[5] = beta;  // may change
       map_store[6] = 1;  // may change (only for fermions)
 
-#ifdef FERMION
       if(not back)
       {
         int d_b = 0;
-        for(int k=0;k<dir_.size();k++) d_b = add(d_b, sym_[i][k]*dir_[k]);
+        for(int k=0;k<dir_.size();k++) d_b = ss(d_b, sym_[i][k]*dir_[k]);
         int a_p = 0;
-        for(int k=0;k<dim.size()-num;k++) a_p = add(a_p, sym[j][k]);
-        map_store[6] = 1-2*((d_b*a_p)%2);
+        for(int k=0;k<dim.size()-num;k++) a_p = ss(a_p, sym[j][k]);
+        map_store[6] = 1-2*(( ff(d_b) * ff(a_p) )%2);
       }
-#endif
 
       ad = 0;
       for(int k=0;k<dim_.size();k++) if(k<indexa or k>=indexa+num)
@@ -1152,10 +1133,10 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   comb = combine(num, dim_.size()-1);
   comb = comb.combine(0, num-1);
 
-  int sym = add(comb.sym_[0][0], comb.sym_[0][1]);
+  int sym = ss(comb.sym_[0][0], comb.sym_[0][1]);
   bool check = true;
   for(int i=0;i<comb.sym_.size();i++)
-    if(add(comb.sym_[i][0], comb.sym_[i][1])!=sym) check = false;
+    if(ss(comb.sym_[i][0], comb.sym_[i][1])!=sym) check = false;
   if(not check)
   {
     cerr << "Warning in tensor_quantum svd: "
@@ -1164,11 +1145,9 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     return comb.svd(U, S, V, num, cutoff);
   }
 
-#ifdef FERMION
   U.dir_ = vector<int> (2, 1);
   V.dir_ = vector<int> (2, 1);
   S.dir_ = vector<int> (2, 1);
-#endif
 
   U.dim_ = comb.dim_;
   U.dim_[1] = U.dim_[0];
@@ -1228,14 +1207,12 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
     u_num[loc] += 1;
   }
   u_num = v_num;
-
-
   for(int i=0;i<sym;i++)
   {
     S.val_[i].diag(2);
     if(comb.val_[i].index_[0]<comb.val_[i].index_[1])
-      S.val_[i] = S.val_[i].resize(1,comb.val_[i].index_[1]);
-    else S.val_[i] = S.val_[i].resize(0,comb.val_[i].index_[0]);
+      S.val_[i].resize(1,comb.val_[i].index_[1]);
+    else S.val_[i].resize(0,comb.val_[i].index_[0]);
   }
 
   // if cutoff is larger than the number of non-zero singular values
@@ -1262,13 +1239,13 @@ vector<double> qtensor<T>::svd(qtensor& U, qtensor<double>& S, qtensor& V,
   
     for(int i=0;i<sym;i++)
     {
-      U.val_[i] = U.val_[i].resize(1, u_num[i]);
+      U.val_[i].resize(1, u_num[i]);
       U.dim_[1][U.sym_[i][1]] = u_num[i];
-      V.val_[i] = V.val_[i].resize(0, v_num[i]);
+      V.val_[i].resize(0, v_num[i]);
       V.dim_[0][V.sym_[i][0]] = v_num[i];
-      S.val_[i] = S.val_[i].resize(0, u_num[i]);
+      S.val_[i].resize(0, u_num[i]);
       S.dim_[0][S.sym_[i][0]] = u_num[i];
-      S.val_[i] = S.val_[i].resize(1, v_num[i]);
+      S.val_[i].resize(1, v_num[i]);
       S.dim_[1][S.sym_[i][1]] = v_num[i];
     }
   }

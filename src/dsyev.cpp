@@ -18,7 +18,7 @@ using namespace std;
 
 extern "C" void dsyev_(char *JOBZ, char *UPLO, int *n, double *A, int *LDA, double *W, double *WORK, int *LWORK, int *INFO);
 
-void zheev(double *a, int N, double *W)
+void dsyev(double *a, int N, double *W)
 {
   char JOBZ = 'N'; /* Compute eigenvalues only */
   char UPLO = 'U'; /* Upper triangle of A is stored. */
@@ -63,7 +63,7 @@ void zheev(double *a, int N, double *W)
   delete WORK;
 }
 
-void zheev(double *a, int N, double *W, double *vec)
+void dsyev(double *a, int N, double *W, double *vec)
 {
   char JOBZ = 'V'; /* Compute eigenvalues and eigenvectors. */
   char UPLO = 'U'; /* Upper triangle of A is stored. */

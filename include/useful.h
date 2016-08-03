@@ -7,7 +7,10 @@ using std::vector;
 #include "qtensor.h"
 
 // define the rule for adding symmetries
-int add(int a, int b);
+int ss(int a, int b);
+
+/* define the fermion parity of each symmetry sector */ 
+int ff(int a);
 
 void print_matrix(const vector< vector<int> >& map);
 

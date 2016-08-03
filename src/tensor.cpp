@@ -24,6 +24,14 @@ tensor<T>::tensor(int i0, int i1, int i2, int i3,
 
 
 template <typename T>
+tensor<T>::tensor(const vector<int>& index) 
+{
+  index_ = index;
+  val_.resize(dim_());
+}
+
+
+template <typename T>
 tensor<T>::tensor(T* val,
                   int i0, int i1, int i2, int i3,
                   int i4, int i5, int i6, int i7)
@@ -40,6 +48,16 @@ tensor<T>::tensor(T* val,
   else cerr << "Error in tensor constructor: "
                "The first index " << i0 << " should be non-zero.\n";
 
+  int dim = dim_();
+  val_.resize(dim);
+  for(int i=0;i<dim;i++) val_[i] = val[i];
+}
+  
+  
+template <typename T>
+tensor<T>::tensor(T* val, const vector<int>& index)
+{
+  index_ = index;
   int dim = dim_();
   val_.resize(dim);
   for(int i=0;i<dim;i++) val_[i] = val[i];
@@ -62,33 +80,54 @@ void tensor<T>::update(T val,
   if(i6>=0){ loc.push_back(i6);
   if(i7>=0){ loc.push_back(i7);}}}}}}}}
   
-  if( loc.size() != index_.size() )
+  if( loc.size()==1)
   {
-    cerr << "Error in tensor update: "
-	        "The number of input index " << loc.size() 
-         << " doesn't match this " << index_.size()
-         << "-tensor.\n";
+    val_.at(i0) += val;
     return ;
   }
-
+  
+  if( loc.size() != index_.size() )
+  {
+    cerr << "Error in tensor update: The number of input index " << loc.size() 
+         << " doesn't match this " << index_.size() << "-tensor.\n";
+    return ;
+  }
   for(int i=0;i<loc.size();i++) if(loc[i]>=index_[i])
   {
-    cerr << "Error in tensor update: "
-            "The input " << i+1 << "th index " << loc[i] 
+    cerr << "Error in tensor update: The input " << i+1 << "th index " << loc[i] 
          << " is out of range 0~" << index_[i]-1 << endl;
     return;
   }
   
-  val_[loc_(loc)] = val;
+  val_[loc_(loc)] += val;
 }
 
+
+template <typename T>
+void tensor<T>::zeros()
+{
+  for(int i=0;i<val_.size();i++) val_[i] = 0.0;
+}
+
+
+template <typename T>
+void tensor<T>::ones()
+{
+  for(int i=0;i<val_.size();i++) val_[i] = 1.0;
+}
+
+
+template <>
+void tensor<int>::rand()
+{
+  for(int i=0;i<val_.size();i++) val_[i] = std::rand()-RAND_MAX/2;
+}
 
 template <>
 void tensor<double>::rand()
 {
   for(int i=0;i<val_.size();i++) val_[i] = 10.0*std::rand()/RAND_MAX-5;
 }
-
 
 template <>
 void tensor< complex<double> >::rand()
@@ -100,27 +139,73 @@ void tensor< complex<double> >::rand()
 
 
 template <typename T>
-void tensor<T>::print(bool all) const
+void tensor<T>::id(int a1, int b1, int a2, int b2,
+                   int a3, int b3, int a4, int b4)
+{
+  vector<int> pair;
+  if(a1>=0){ pair.push_back(a1);
+  if(b1>=0){ pair.push_back(b1);
+  if(a2>=0){ pair.push_back(a2);
+  if(b2>=0){ pair.push_back(b2);
+  if(a3>=0){ pair.push_back(a3);
+  if(b3>=0){ pair.push_back(b3);
+  if(a4>=0){ pair.push_back(a4);
+  if(b4>=0){ pair.push_back(b4);}}}}}}}}
+
+  for(int i=0;i<pair.size();i++) if(pair[i]>=index_.size())
+  {
+    cerr << "Error in tensor id: The input " << i+1 << "th index " << pair[i] 
+         << " is out of range 0~" << index_.size()-1 << endl;
+    return;
+  }
+  if(pair.size()%2)
+  {
+    cerr << "Error in tensor id: The input indexes should be couples "<< endl;
+    return;
+  }
+  
+  ones();
+  vector< vector<int> > map;
+  generate_map(map, index_);
+  for(int i=0;i<val_.size();i++) for(int p=0;p<pair.size()/2;p++)
+    if( map[i].at(pair[2*p])!=map[i].at(pair[2*p+1]) ) val_[i] = 0.0;
+}
+
+
+template <typename T>
+bool tensor<T>::empty() const
+{
+  double sum = 0.0;
+  for(int i=0;i<val_.size();i++) sum += abs(val_[i]);
+  if(sum<TOL) return true;
+  else return false;
+}
+
+
+template <typename T>
+void tensor<T>::print() const
 {
   cout.precision(10);
   cout << "Print all non-zero values of the tensor:\n"
-       << "dimension=(" << index_[0];
-  for(int i=1;i<index_.size();i++) cout << ", " << index_[i];
+       << "dimension=(";
+  for(int i=0;i<index_.size();i++)
+    if(i==0) cout << index_[i];
+    else cout << ", " << index_[i];
   cout << ") size=" << val_.size() << "\n";
 
-  vector< vector<int> > map;
-  generate_map(map, index_);
-  for(int i=0;i<val_.size();i++) if(all)
+  vector<int> loc(index_.size(), 0);
+  for(int i=0;i<val_.size();i++)
   {
-    cout << "(" << map[i][0];
-    for(int j=1;j<index_.size();j++) cout << ", " << map[i][j];
-    cout << ") " << val_[i] << "\n";
-  }
-  else if(abs(val_[i])>TOL)
-  {
-    cout << "(" << map[i][0];
-    for(int j=1;j<index_.size();j++) cout << ", " << map[i][j];
-    cout << ") " << val_[i] << "\n";
+    if(abs(val_[i])>TOL)
+    {
+      cout << "(";
+      for(int j=0;j<index_.size();j++)
+        if(j==0) cout << loc[j];
+        else cout << ", " << loc[j];
+      cout << ") " << val_[i] << "\n";
+    }
+    loc.at(loc.size()-1) += 1;
+    refine_(loc);
   }
 }
 
@@ -137,7 +222,7 @@ void tensor<T>::print_matrix() const
     {
       for(int j=0;j<index_[1];j++)
       {
-        T val = val_[i*index_[1]+j];
+        T val = val_.at(i*index_[1]+j);
         if(abs(val)>ZERO) cout << val << "\t";
         else cout << (T)0 << "\t";
       }
@@ -148,6 +233,17 @@ void tensor<T>::print_matrix() const
     cout << "This " << index_.size() << "-tensor cannot "
             "be printed as a matrix\n";
 }
+
+template <typename T>
+void tensor<T>::print_index() const
+{
+  cout << "(";
+  for(int i=0;i<index_.size();i++)
+    if(i==0) cout << index_[i];
+    else cout << ", " << index_[i];
+  cout << ")" << endl;
+}
+
 
 
 template <typename T>
@@ -201,51 +297,59 @@ void tensor<T>::read_file(ifstream& name)
 
 
 template <>
-tensor<double>& tensor<double>::conjugate()
-{
-  return *this;
-}
-
+void tensor<double>::conjugate() { return ; }
 
 template <>
-tensor< complex<double> >& tensor< complex<double> >::conjugate()
+void tensor< complex<double> >::conjugate()
 {
   for(int i=0;i<val_.size();i++) val_[i] = std::conj(val_[i]);
-  return *this;
 }
 
 
 template <>
-tensor< complex<double> > tensor<double>::comp() const
+void tensor<double>::to_double(tensor<double>& ret) const
 {
-  tensor< complex<double> > ret;
+  ret.index_ = index_;
+  ret.val_ = val_;
+}
+
+template <>
+void tensor<complex<double> >::to_double(tensor<double>& ret) const
+{ 
+  cerr << "Warning in tensor to_double: discard imaginary part. " << endl;
   ret.index_ = index_;
   ret.val_.resize(val_.size());
-  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i];
-  return ret;
-}
-
-
-template <>
-tensor< complex<double> > tensor< complex<double> >::comp() const
-{
-  return *this;
+  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i].real();
 }
 
 
 template <typename T>
-tensor<T> tensor<T>::exchange(int a, int b) const
+void tensor<T>::to_complex(tensor<complex<double> >& ret) const
 {
+  ret.index_ = index_;
+  ret.val_.resize(val_.size());
+  for(int i=0;i<val_.size();i++) ret.val_[i] = val_[i]*1.0;
+}
+
+
+template <typename T>
+void tensor<T>::exchange(tensor& ret, int a, int b) const
+{  
   if( a>=index_.size() or b>=index_.size() or a<0 or b<0)
   {
     cerr << "Error in tensor exchange: The input index number "<< a 
-         << " and/or " << b << " is out of range 0~" << index_.size()-1
-         << endl;
-    return *this;
+         << " and/or " << b << " is out of range 0~" << index_.size()-1 << endl;
+    return ;
   }
   
-  tensor<T> ret;
   ret.index_ = index_;
+
+  if(a==b)
+  {
+    ret.val_ = val_;
+    return ;
+  }
+  
   ret.index_[a] = index_[b];
   ret.index_[b] = index_[a];
   
@@ -257,23 +361,28 @@ tensor<T> tensor<T>::exchange(int a, int b) const
     int temp = map[i][a];
     map[i][a] = map[i][b];
     map[i][b] = temp;
-    ret.val_[i] = val_[loc_(map[i])];
+    ret.val_[i] = val_.at( loc_(map[i]) );
   }
-  return ret;
 }
 
 
 template <typename T>
-tensor<T> tensor<T>::shift(int num) const
+void tensor<T>::shift(tensor& ret, int num) const
 {
-  if( num>=index_.size() or num<=0)
+  if( num>index_.size() or num<0)
   {
     cerr << "Error in tensor transpose: The input index number "
-         << num << " is out of range 1~" << index_.size()-1 << endl;
-    return *this;
+         << num << " is out of range 0~" << index_.size() << endl;
+    return ;
   }
   
-  tensor<T> ret;
+  if(num==0 or num==index_.size())
+  {
+    ret.index_ = index_;
+    ret.val_ = val_;
+    return ;
+  }
+
   ret.index_.resize(index_.size());
   for(int i=0;i<index_.size();i++)
     ret.index_[i] = index_[(i+num)%index_.size()];
@@ -285,16 +394,48 @@ tensor<T> tensor<T>::shift(int num) const
   for(int i=0;i<map.size();i++)
   {
     for(int j=0;j<index.size();j++) index[j] = map[i][(j+num)%index_.size()];
-    ret.val_[i] = val_[loc_(index)];
+    ret.val_[i] = val_.at( loc_(index) );
   }
-  return ret;
 }
 
 
 template <typename T>
-tensor<T>& tensor<T>::diag(int num)
+void tensor<T>::take(tensor& ret, int n, int k) const
 {
-  int min = index_[0];
+  if(n<0 or n>=index_.size())
+  {
+    cout << "Error in tensor take: "
+            "the index " << n << " is out of the range 0~"
+         << index_.size()-1 << endl;
+    return ;
+  }
+  if( k<0 or k>=index_[n])
+  {
+    cout << "Error in tensor take: "
+            "the number " << k << " is out of the dimension range 0~" 
+         << index_[n] << endl;
+    return ;
+  }
+  
+  ret.index_.resize(index_.size()-1);
+  for(int i=0;i<n;i++) ret.index_[i] = index_[i];
+  for(int i=n;i<ret.index_.size();i++) ret.index_[i] = index_[i+1];
+
+  int r = 1;
+  for(int i=n+1;i<index_.size();i++) r *= index_[i];
+  ret.val_.resize(dimension()/dimension(n));
+  for(int i=0;i<ret.val_.size();i++)
+  {
+    int j = ( (i/r) * index_[n] + k ) * r + (i%r) ;
+    ret.val_.at(i) = val_.at(j);
+  }
+}
+
+
+template <typename T>
+void tensor<T>::diag(int num)
+{
+  int min = index_.at(0);
   for(int i=0;i<index_.size();i++) if(index_[i]<min) min = index_[i];
   
   vector<T> vals;  // used to store the diagonal elements
@@ -315,86 +456,93 @@ tensor<T>& tensor<T>::diag(int num)
     for(int j=1;j<num;j++) loc = loc*index_[j] + i;
     val_[loc] = vals[i];
   }
-  return *this;
 }
 
 
 template <typename T>
-tensor<T>& tensor<T>::combine(int min, int max)
+void tensor<T>::combine(int min, int max)
 {
-  if(min==max) return *this;
-  if( 0<=min and min<max and max<index_.size() )
+  if(min==max) return ;
+  
+  if( min<0 or max<min or max>=index_.size() )
   {
-    vector<int> store(index_);
-    index_.resize( store.size()-(max-min) );
-    for(int i=min+1;i<=max;i++) index_[min] *= store[i];
-    for(int i=1;i<store.size()-max;i++) index_[min+i] = store[max+i];
-  }
-  else
     cerr << "Error in tensor combine: "
             "The inputs do not satisfy 0 <= " << min << " < " << max
          << " <= " << index_.size()-1 << endl;
-  return *this;
+    return ;
+  }
+  
+  for(int i=min+1;i<=max;i++) index_[min] *= index_[i];
+  for(int i=1;i<index_.size()-max;i++) index_[min+i] = index_[max+i];
+  int new_size = index_.size() - (max-min);
+  index_.resize(new_size);
 }
 
 
 template <typename T>
-tensor<T> tensor<T>::resize(int k, int n) const
+void tensor<T>::resize(int k, int n)
 {
+  if(index_.size()==0) return;
+  
   if( k>=index_.size() or k<0)
   {
     cerr << "Error in tensor resize: The input index number "
          << k << " is out of range 0~" << index_.size()-1 << endl;
-    return *this;
-  }
-  
-  int d = dim_();
-  if(d==0)
-  {
-    cerr<< "Warning in tensor resize: empty tensor.\n";
-    return *this;
+    return ;
   }
 
-  tensor<T> ret;
-  ret.index_ = index_;
-  ret.index_[k] = n;
+  if(n==index_[k]) return;
+
+  int rk = 1;  // radix for indexes before k (before resize)
+  for(int i=k+1;i<index_.size();i++) rk *= index_[i];
+  int rk1 = rk * n; // radix for indexes before k (after resize)
+  rk *= index_[k];
+
+  int n_old = index_[k];
+  index_[k] = n;
   
-  vector< vector<int> > map;
-  generate_map(map, ret.index_);
-  ret.val_.resize(map.size());
-  for(int i=0;i<map.size();i++) if(map[i][k]<index_[k])
-    ret.val_[i] = val_[loc_(map[i])];
-  else ret.val_[i] = 0.0;
-  return ret;
+  vector<T> val(val_);
+  val_.resize(dim_());
+  for(int i=0;i<val_.size();i++)
+  {
+    int l = i/rk1;
+    int r = i%rk1;
+    if(r*n/rk1 < n_old) val_.at(i) = val.at(l*rk+r);
+    else val_.at(i) = 0.0;
+  }
 }
 
 
 template <typename T>
-tensor<T>& tensor<T>::plus(const tensor& A, const tensor& B,
-                            T alpha, T beta)
+void tensor<T>::resize(const vector<int>& index)
 {
-  if( A.index_ != B.index_ )
-  {
-    cerr << "Error in tensor plus: dimension doesn't match.\n A: ";
-    for(int i=0;i<A.index_.size();i++)
-      cerr << A.index_[i] << " ";
-    cerr << "\n B: ";
-    for(int i=0;i<B.index_.size();i++)
-      cerr << B.index_[i] << " ";
-    cerr << endl;
-    return *this;
-  }
-  
-  index_ = A.index_;
-  val_.resize(A.val_.size());
-  for(int i=0;i<A.val_.size();i++)
-    val_[i] = alpha * A.val_[i] + beta * B.val_[i];
-  return *this;
+  index_ = index;
+  val_.resize(dim_());
+  for(int i=0;i<val_.size();i++) val_[i] = 0.0;
 }
 
 
 template <typename T>
-T tensor<T>::trace(tensor& A)
+T tensor<T>::trace() const
+{
+  T val = 0.0;
+  if(index_.size()==0) return val;
+  
+  int min = index_[0];
+  for(int i=0;i<index_.size();i++) if(index_[i]<min) min = index_[i];
+  
+  for(int i=0;i<min;i++)
+  {
+    int loc = i;
+    for(int j=1;j<index_.size();j++) loc = loc*index_[j] + i;
+    val += val_.at(loc);
+  }
+  return val;
+}
+
+
+template <typename T>
+T tensor<T>::trace(tensor& A) const
 {
   if(index_!=A.index_)
   {
@@ -408,7 +556,52 @@ T tensor<T>::trace(tensor& A)
 
 
 template <typename T>
-tensor<T>& tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
+void tensor<T>::plus(tensor& ret, const tensor& B, T alpha, T beta) const
+{
+  if( index_ != B.index_ )
+  {
+    cerr << "Error in tensor plus: dimension doesn't match.\n A: ";
+    for(int i=0;i<index_.size();i++)
+      cerr << index_[i] << " ";
+    cerr << "\n B: ";
+    for(int i=0;i<B.index_.size();i++)
+      cerr << B.index_[i] << " ";
+    cerr << endl;
+    return ;
+  }
+  
+  ret.index_ = index_;
+  ret.val_.resize(val_.size());
+  for(int i=0;i<val_.size();i++)
+    ret.val_[i] = alpha * val_[i] + beta * B.val_[i];
+}
+
+
+template <typename T>
+void tensor<T>::times(T alpha, T beta) 
+{
+  for(int i=0;i<val_.size();i++) val_[i] = alpha * val_[i] + beta;
+}
+
+  
+template <>
+void tensor<double>::gemm(double* out, double* in, char transa, char transb,
+                          int m, int n, int k, double alpha, double beta)
+{
+  dgemm(transa, transb, m, n, k, begin(), in, out, alpha, beta);
+}
+
+template <>
+void tensor<complex<double> >::gemm(complex<double>* out, complex<double>* in,
+                               char transa, char transb, int m, int n, int k,
+                               complex<double> alpha, complex<double> beta)
+{
+  zgemm(transa, transb, m, n, k, begin(), in, out, alpha, beta);
+}
+
+
+template <typename T>
+void tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
                                int num, bool cover)
 {
   int indexa = 0;
@@ -426,7 +619,7 @@ tensor<T>& tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
     cerr << "\nB: ";
     for(int i=0;i<num;i++) cerr << B.index_[indexb+i] << " ";
     cerr << endl;
-    return *this;
+    return ;
   }
 
   index_.resize(A.index_.size()+B.index_.size()-2*num);
@@ -452,20 +645,19 @@ tensor<T>& tensor<T>::contract(tensor& A, tensor& B, char transa, char transb,
          << val_.size() << "!=" << m*n <<". Erase old data\n";
     val_ = vector<T> (m*n, 0);
   }
-  zgemm(transa, transb, m, n, k, A.begin(), B.begin(), begin(), 1, 1);
-  return *this;
+  A.gemm(begin(), B.begin(), transa, transb, m, n, k, 1, 1);
 }
 
 
 template <typename T>
-tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
+void tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
                                bool cover, double sign)
 {
   if(A.index_[a]!=B.index_[b])
   {
     cerr << "Error in tensor contract: Dimensions do not match. "
          << A.index_[a] <<"!=" << B.index_[b] << endl;
-    return *this;
+    return ;
   }
   int mid = A.index_[a];
   
@@ -500,7 +692,6 @@ tensor<T>& tensor<T>::contract(const tensor& A, int a, const tensor& B, int b,
   for(int i2=0;i2<ar;i2++) for(int j2=0;j2<br;j2++)
     val_[i1*bl*br*ar+j1*br*ar+j2*ar+i2] += 
         A.val_[i1*mid*ar+k*ar+i2] * B.val_[j1*mid*br+k*br+j2] * sign;
-  return *this;
 }
 
 
@@ -523,7 +714,22 @@ void tensor<T>::contract(T* out, T* in, int row, int col,
     cerr << "Error in tensor contract: The indexes are not the same. "
          << val_.size()/m << "!=" << k << endl;
   }
-  zgemm(transa, transb, m, n, k, begin(), in, out, alpha, beta);
+  gemm(out, in, transa, transb, m, n, k, alpha, beta);
+}
+
+
+template <>
+void tensor<double>::gesvd(double* in, int row, int col,
+                           double* s, double* u, double* v)
+{
+  dgesvd(in, row, col, s, u, v);
+}
+
+template <>
+void tensor<complex<double> >::gesvd(complex<double>* in, int row, int col,
+                               double* s, complex<double>* u, complex<double>* v)
+{
+  zgesvd(in, row, col, s, u, v);
 }
 
 
@@ -574,8 +780,21 @@ int tensor<T>::svd(tensor& U, tensor<double>& S, tensor& V, int num)
     S.val_[0] = abs(val_[0]);
     return 1;
   }
-  zgesvd(begin(), left, right, S.begin(), U.begin(), V.begin());
+  gesvd(begin(), left, right, S.begin(), U.begin(), V.begin());
   return ret;
+}
+
+
+template <>
+void tensor<double>::heev(int n, double* val, double* vec)
+{
+  dsyev(begin(), n, val, vec);
+}
+
+template <>
+void tensor<complex<double> >::heev(int n, double* val, complex<double>* vec)
+{
+  zheev(begin(), n, val, vec);
 }
 
 
@@ -595,7 +814,7 @@ int tensor<T>::eig(double* val, T* vec)
     return 0;
   }
   int d = index_[0];
-  zheev(begin(), d, val, vec);
+  heev(d, val, vec);
   return d;
 }
 

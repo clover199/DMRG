@@ -177,6 +177,7 @@ void dmrg(mps<T>& my_mps, mpo<T>& my_mpo,
     cout << ">>>>>>>>>>> starting l=" << i << " r=" << L-1-i << " <<<<<<<<<<\n";
     update_two(i, L-i-1, pre_cutoff, my_mps, my_mpo, sector, data_energy, data_singular);
   }
+
   if(sweep!=-1) for(int i=L/2;i<L-1;i++)
   {
     cout << ">>>>>>>>>> starting l=" << i << " r=" << i+1 << " >>>>>>>>>>\n";
@@ -489,23 +490,37 @@ T calc(mps<T>& my_mps, mpo<T>& my_mpo)
   temp = my_mps[0];
   temp.conjugate();
   left.contract(temp, end, 'T', 'N', 1);
+
   for(int i=1;i<sites-1;i++)
   {
-    end.contract(left, 1, my_mpo[i], 0);
-    left = end.exchange(3,4);
+    temp.contract(left, 1, my_mpo[i], 0, true);
+    left = temp.exchange(3,4);
     end.contract(left, my_mps[i], 'N', 'N', 2);
     temp = my_mps[i];
     temp.conjugate();
     left.contract(temp, end, 'T', 'N', 2);
+    left = left.simplify();
   }
   qtensor<T> store;
   store.contract(my_mpo[sites-1], my_mps[sites-1], 'N', 'T', 1);
   temp = my_mps[sites-1];
   temp.conjugate();
   end.contract(temp, store, 'N', 'N', 1);
-  return left.trace(end, true);
+  end = end.simplify();
+  return left.trace(end,true);
 }
 
 template double calc(mps<double>& my_mps, mpo<double>& my_mpo);
 template complex<double> calc(mps< complex<double> >& my_mps,
                               mpo< complex<double> >& my_mpo);
+
+
+// pos gives the positions of the remaining sites
+template <typename T>
+double entanglement_entropy(mps<T>& my_mps, vector<int> pos)
+{
+  
+}
+
+template double entanglement_entropy(mps<double>& my_mps, vector<int> pos);
+template double entanglement_entropy(mps<complex<double> >& my_mps, vector<int> pos);

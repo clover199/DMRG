@@ -1,12 +1,43 @@
 #include "global.h"
 #include "qtensor.h"
 
-#ifdef SYMMETRY
-  int add(int a, int b) {return (a+b+SYMMETRY)%SYMMETRY;}
-#else
-  int add(int a, int b) {return a+b;}
-#endif
+#ifdef S4E
 
+int ss(int a, int b)
+{
+// 000 001 010 011 100 101 110 111
+//  0   1   2   3   4   5   6   7
+  int p[8][8] = {{0,1,2,3,4,5,6,7},
+                 {1,0,3,2,5,4,7,6},
+                 {2,3,0,1,6,7,4,5},
+                 {3,2,1,0,7,6,5,4},
+                 {4,5,6,7,0,1,2,3},
+                 {5,4,7,6,1,0,3,2},
+                 {6,7,4,5,2,3,0,1},
+                 {7,6,5,4,3,2,1,0}};
+  if(b<0) return p[a][-b];
+  else return p[a][b];
+}
+
+int ff(int a)
+{
+  int f[8] = {0,0,1,1,1,1,0,0};
+  return f[a];
+}
+
+#else
+#ifdef SYMMETRY
+  int ss(int a, int b) {return (a+b+SYMMETRY)%SYMMETRY;}
+
+  int ff(int a) {return a%2;}
+
+#else
+  int ss(int a, int b) {return a+b;}
+
+  int ff(int a) {return a%2;}
+
+#endif
+#endif
 
 void print_matrix(const vector< vector<int> >& map)
 {
@@ -140,13 +171,13 @@ void generate_dim_sym(vector< vector<int> >& dim, vector< vector<int> >& sym,
   index.resize(lnum+rnum);  // used to store the symmetry sector
   if(sector!=-1) for(int s=0;s<SYMMETRY;s++)
   {
-    int t = add(sector, -s);
+    int t = ss(sector, -s);
     for(int l=0;l<ldim.size();l++) for(int r=0;r<rdim.size();r++)
     {
       int lsym = 0;
-      for(int j=0;j<lnum;j++) lsym = add(lsym, ldim[l][j]);
+      for(int j=0;j<lnum;j++) lsym = ss(lsym, ldim[l][j]);
       int rsym = 0;
-      for(int j=0;j<rnum;j++) rsym = add(rsym, rdim[r][j]);
+      for(int j=0;j<rnum;j++) rsym = ss(rsym, rdim[r][j]);
       if(lsym==s and rsym==t)
       {
         for(int i=0;i<lnum;i++) index[i] = ldim[l][i];

@@ -4,11 +4,18 @@
 #include "global.h"
 #include "tensor.h"
 
-// Attention: the constructor function and functions:
-// 'exchange', 'transpose', 'cut'
-// can only accept at most 8 indexes
+/* this class defines operators with symmetries:
+   dim stores the dimensions of each symmetry block
+   sym stores the symmetries for the corresponding val
+   val stores the symmetry blocks
+   dir is only used for fermion operators 
+   
+   Attention: the constructor function and functions:
+   'u_dim', 'exchange', 'transpose', 'cut'
+   can only accept at most 8 indexes
 
-// T = 'double', 'complex<double>'
+   T = 'double', 'complex<double>' 
+*/ 
 
 template <typename T> 
 class qtensor
@@ -16,16 +23,42 @@ class qtensor
   template <typename> friend class qtensor;
 
 private:
-  vector< vector<int> > dim_;  // the dimension for different sectors
-                               // dim_[i][j] is the dimension for index i, symmetry j
-  vector< vector<int> > sym_;  // symmetries are represented by 0,1,2...
-  vector< tensor<T> > val_;
+  vector< vector<int> > dim_;  /* the dimension for different sectors. 
+                                  dim_[i][j] with index i, symmetry j */
+  vector< vector<int> > sym_;  /* symmetries are represented by 0,1,2... */
+  vector< tensor<T> > val_;  /* the tensor for the corresponding symmetry */
+  vector<int> dir_;  /* only for fermion operators.
+                        -1: left, 1: right, 0: not fermion */
   
-  // get/check "dim_" from "sym_" and "val_"
-  void check_dim_(int n);
-#ifdef FERMION
-  vector<int> dir_; // -1 means left, 1 means right, 0 meas not a physical index
-#endif
+  /* get/check "dim_" from "sym_" and "val_" */
+  void check_dim_(int n)
+  {
+    for(int i=0;i<dim_.size();i++)
+    {
+      if( dim_[i].at(sym_[n][i])==0 )
+        dim_[i].at(sym_[n][i]) = val_.at(n).dimension(i);
+      else if( dim_[i].at(sym_[n][i])!=val_.at(n).dimension(i) )
+        cerr << "Error in tensor_quantum check_dim_: "
+             << dim_[i][sym_[n][i]] << "!=" << val_[n].dimension(i)
+             << endl;
+    }
+  }
+
+  /* get index for the tensor with symmetry sym */
+  void get_index_(vector<int>& index, const vector<int>& sym) const
+  {
+    index.resize(dim_.size());
+    for(int i=0;i<dim_.size();i++)
+      index[i] = dim_[i][sym[i]];
+  }
+
+  /* get index for the "tensor tensor" */
+  void get_index_(vector<int>& index) const
+  {
+    index.resize(dim_.size());
+    for(int i=0;i<dim_.size();i++)
+      index[i] = dim_[i].size();
+  }
 
 public:
   // claim space with all elements as zero
@@ -34,15 +67,10 @@ public:
 
   qtensor(T* val, const vector< vector<int> >& dim,
           const vector< vector<int> >& sym);
-
-  ~qtensor() {
-    dim_.clear();
-    sym_.clear();
-    val_.clear();
-#ifdef FERMION
-    dir_.clear();
-#endif
-  }
+		  
+  qtensor(T* val, const vector< vector<int> >& dim,
+          const vector< vector<int> >& sym,
+          const vector<int>& dir);
 
   void update(tensor<T>& val,
               int i0, int i1=-1, int i2=-1, int i3=-1, 
@@ -54,16 +82,19 @@ public:
     val_.clear();
   }
 
+  // update dim_ suppose all the blocks have same dim
+  void u_dim(int i0=0, int i1=0, int i2=0, int i3=0, 
+             int i4=0, int i5=0, int i6=0, int i7=0);
+			 
   // only used for the 4-tensor MPO
   qtensor id() const;
 
   // only used for the 3-tensor MPO
   qtensor id(const qtensor<T>& bulk_mpo) const;
 
-#ifdef FERMION
+  // only used for fermion operators
   void add_sign(int i0=2, int i1=2, int i2=2, int i3=2, 
                 int i4=2, int i5=2, int i6=2, int i7=2);
-#endif
   
   vector< vector<int> > dimension_all() const {return dim_;}
   
@@ -143,7 +174,7 @@ public:
   // result = alpha * A + beta * B
   qtensor& plus(const qtensor& A, const qtensor& B, T alpha=1, T beta=1);
 
-  T trace(qtensor& A, bool fermion=false);
+  T trace(qtensor& A, bool fermion=true);
   
   qtensor operator+(const qtensor& A) const {
     qtensor<T> ret;
@@ -153,8 +184,8 @@ public:
   
   // contract tensor A and B with the left/right most index
   // This function cannot be used for fermion operator contraction
-  qtensor& contract(qtensor& A, qtensor& B,
-                    char transa='N', char transb='N', int num=1);
+  qtensor& contract(qtensor& A, qtensor& B, char transa='N', char transb='N',
+                    int num=1);
   
   qtensor operator*(qtensor& A) {
     qtensor<T> ret;
@@ -165,7 +196,7 @@ public:
   // contract index a of tensor A with index b of tensor B
   // change is only used for fermions. change=true: exchange A,B position
   qtensor& contract(const qtensor& A, int a, const qtensor& B, int b,
-                    bool change = false);
+                    bool change = false, bool fermion=true);
   
   // multiply the tensor by an array (as a matrix)
   // used in the sparse matrix multiplication routine in dmrg 

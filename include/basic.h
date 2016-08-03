@@ -1,29 +1,34 @@
 #ifndef _BASIC_
 #define _BASIC_
 
-void tgemm(char transa, char transb, int m, int n, int K,
+#include "val_for_lanczos.h"
+
+void dgemm(char transa, char transb, int m, int n, int K,
            double *a, double *b, double *C, double alpha, double beta);
 
-void tgesvd(double *a, int m, int n, double *S, double *u, double *v);
+void dgesvd(double *a, int m, int n, double *S, double *u, double *v);
 
-void dsaupd(int n, int nev, double *Evals, double *Evecs, void av(int n, double *in, double *out));
+// dsaupd
+void znaupd(int n, int nev, double *Evals, double *Evecs, lanczos<double>& pass_val);
 
 void dsyev(double *a, int N, double *W);
 void dsyev(double *a, int N, double *W, double *vec);
 
+
+using std::complex;
 #include <complex>
 
-void tgemm(char transa, char transb, int m, int n, int K,
-           std::complex<double> *a, std::complex<double> *b, std::complex<double> *C,
-           std::complex<double> alpha, std::complex<double> beta);
+void zgemm(char transa, char transb, int m, int n, int K,
+           complex<double> *a, complex<double> *b, complex<double> *C,
+           complex<double> alpha, complex<double> beta);
 
-void tgesvd(std::complex<double> *a, int m, int n, double *S,
-            std::complex<double> *u, std::complex<double> *v);
+void zgesvd(complex<double> *a, int m, int n, double *S,
+            complex<double> *u, std::complex<double> *v);
 
-void znaupd(int n, int nev, double *Evals, std::complex<double> *Evecs,
-            void av(int n, complex<double> *in, complex<double> *out));
+void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
+            lanczos<complex<double> >& pass_val);
 
-void zheev(std::complex<double> *a, int N, double *W);
-void zheev(std::complex<double> *a, int N, double *W, std::complex<double> *vec);
+void zheev(complex<double> *a, int N, double *W);
+void zheev(complex<double> *a, int N, double *W, complex<double> *vec);
 
 #endif

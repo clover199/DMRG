@@ -33,7 +33,7 @@ extern "C" void zgesvd_(char *JOBU, char *JOBVT, int *M, int *N,
                         complex<double> *WORK, int *LWORK, double *RWORK, int *INFO);
 
 
-void tgesvd(complex<double> *a, int m, int n, double *S,
+void zgesvd(complex<double> *a, int m, int n, double *S,
             complex<double> *u, complex<double> *v)
 {
   char JOBU = 'A'; /* 'A':  all M columns of U are returned in array U;

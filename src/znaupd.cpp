@@ -51,6 +51,7 @@
 #include <iostream>
 #include <complex>
 #include <cmath>
+#include "val_for_lanczos.h"
 
 using namespace std;
 
@@ -71,8 +72,11 @@ extern "C" void zneupd_(int *rvec, char *All, int *select,
 			complex<double> *workl, int *lworkl,
 			double *rwork, int *ierr);
 
+template <typename T>
+void av(T *in, T *out, lanczos<T>& pass_val);
+
 void znaupd(int n, int nev, double *Evals, complex<double> *Evecs, 
-            void av(int n, complex<double> *in, complex<double> *out))
+            lanczos<complex<double> >& pass_val)
 {
   int ido = 0; /* Initialization of the reverse communication parameter. */
   char bmat = 'I'; /* Specifies that the right hand side matrix should be the identity matrix;
@@ -130,15 +134,15 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 	   &ncv, v, &ldv, iparam, ipntr, workd, workl,
 	   &lworkl, rwork, &info);
     
-   if ((ido==1)||(ido==-1)) av(n, workd+ipntr[0]-1, workd+ipntr[1]-1);
+   if ((ido==1)||(ido==-1)) av(workd+ipntr[0]-1, workd+ipntr[1]-1, pass_val);
   } while ((ido==1)||(ido==-1));
 
   /* From those results, the eigenvalues and vectors are extracted. */
 
   if (info<0)
   {
-    cout << "Error with znaupd, info = " << info << "\n";
-    cout << "Check documentation in dsaupd\n\n";
+    cerr << "Error with znaupd, info = " << info << "\n";
+    cerr << "Check documentation in dsaupd\n\n";
   }
   else
   {
@@ -148,22 +152,21 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
 
     if (ierr!=0)
     {
-      cout << "Error with zneupd, info = " << ierr << "\n";
-      cout << "Check the documentation of zneupd.\n\n";
+      cerr << "Error with zneupd, info = " << ierr << "\n";
+      cerr << "Check the documentation of zneupd.\n\n";
     }
     else if (info==1)
     {
-      cout << "Maximum number of iterations reached.\n\n";
+      cerr << "Maximum number of iterations reached.\n\n";
     }
     else if (info==3)
     {
-      cout << "No shifts could be applied during implicit\n";
-      cout << "Arnoldi update, try increasing NCV.\n\n";
+      cerr << "No shifts could be applied during implicit\n";
+      cerr << "Arnoldi update, try increasing NCV.\n\n";
     }
 
     /* Before exiting, we copy the solution information over to the arrays of
        the calling program */
-
     complex<double> temp;
     for(int i=0; i<nev; i++) for (int j=i; j<nev; j++)
       if (d[j].real() < d[i].real())
@@ -178,9 +181,9 @@ void znaupd(int n, int nev, double *Evals, complex<double> *Evecs,
           v[j*n+k] = temp;
         }
       }
-    
+   
     for(int i=0;i<nev;i++) if(abs(d[i].imag())>1e-6)
-      cout << "Error in znaupd: eigenvalues not real. " << d[i] << endl;
+      cerr << "Error in znaupd: eigenvalues not real. " << d[i] << endl;
     for (int i=0; i<nev; i++) Evals[i] = d[i].real();
     for (int i=0; i<n; i++) Evecs[i] = v[i];
 

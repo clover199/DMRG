@@ -26,10 +26,10 @@ extern "C" void dgemm_(char *TRANSA, char *TRANSB, int *M, int *N, int *K,
                        double *alpha, double *A, int *LDA, double *B, int *LDB,
                        double *beta, double *C, int *LDC);
 
-void tgemm(char transa, char transb, int m, int n, int K,
+void dgemm(char transa, char transb, int m, int n, int K,
            double *a, double *b, double *C, double alpha, double beta)
 {
-  if(m*n*K)
+  if(m>0 and n>0 and K>0)
   {
     char TRANSA = transb;
     char TRANSB = transa;

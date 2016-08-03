@@ -46,10 +46,12 @@
 */
 
 #include <iostream>
+#include "val_for_lanczos.h"
 
 using namespace std;
 
-//void av(int n, double *in, double *out);
+template <typename T>
+void av(T *in, T *out, lanczos<T>& pass_val);
 
 extern "C" void dsaupd_(int *ido, char *bmat, int *n, char *which, int *nev, 
 double *tol, double *resid, int *ncv, double *v, int *ldv, int *iparam, 
@@ -60,7 +62,7 @@ double *z, int *ldz, double *sigma, char *bmat, int *n, char *which, int *nev,
 double *tol, double *resid, int *ncv, double *v, int *ldv, int *iparam, 
 int *ipntr, double *workd, double *workl, int *lworkl, int *ierr);
 
-void dsaupd(int n, int nev, double *Evals, double *Evecs, void av(int n, double *in, double *out))
+void znaupd(int n, int nev, double *Evals, double *Evecs, lanczos<double>& pass_val)
 {
   int ido = 0;
   char bmat[2] = "I";
@@ -110,7 +112,7 @@ void dsaupd(int n, int nev, double *Evals, double *Evecs, void av(int n, double 
     dsaupd_(&ido, bmat, &n, which, &nev, &tol, resid, &ncv, v, &ldv, 
 	        iparam, ipntr, workd, workl, &lworkl, &info);
     
-    if ((ido==1)||(ido==-1)) (*av)(n, workd+ipntr[0]-1, workd+ipntr[1]-1);
+    if ((ido==1)||(ido==-1)) av(workd+ipntr[0]-1, workd+ipntr[1]-1, pass_val);
   } while ((ido==1)||(ido==-1));
 
   /* From those results, the eigenvalues and vectors are extracted. */

@@ -29,7 +29,7 @@ extern "C" void dgesvd_(char *JOBU, char *JOBVT, int *M, int *N, double *A,
                         int *LDA, double *s, double *U, int *LDU, double *VT, 
 						int *LDVT, double *WORK, int *LWORK, int *INFO);
 
-void tgesvd(double *a, int m, int n, double *S, double *u, double *v)
+void dgesvd(double *a, int m, int n, double *S, double *u, double *v)
 {
 if(m and n)
 {
